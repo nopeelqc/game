@@ -2,7 +2,7 @@ let selectedCharacter = null;
 let health = 100;
 let skillCooldowns = [0, 0, 0, 0];
 let cooldownDurations = [0, 0, 0, 0];
-let cooldownIntervals = [null, null, null, null]; // Store intervals for each skill
+let cooldownIntervals = [null, null, null, null];
 let playerImage;
 let enemies = [
     { x: 300, y: 300, health: 50, size: 70, image: null, type: 'knight' },
@@ -12,8 +12,8 @@ let enemies = [
 let playerX, playerY;
 let playerSize = 70;
 let gameCanvas;
-let cultivatorForm = 'melee'; // Track the current form: 'melee' (cận) or 'ranged' (xa)
-let cultivatorSkills = []; // Store the current skills for Cultivator
+let cultivatorForm = 'melee';
+let cultivatorSkills = [];
 
 const characterData = {
     knight: {
@@ -230,81 +230,73 @@ function useSkill(skillIndex) {
         const character = characterData['cultivator'];
         if (cultivatorForm === 'melee') {
             cultivatorSkills = [
-                character.skills[0], // skill 5
-                character.skills[1], // skill 6
-                character.skills[2], // skill 7
-                character.skills[3]  // skill 8
+                character.skills[0],
+                character.skills[1],
+                character.skills[2],
+                character.skills[3]
             ];
         } else {
             cultivatorSkills = [
-                character.skills[0], // skill 5
-                character.skills[4], // skill 9
-                character.skills[5], // skill 10
-                character.skills[6]  // skill 11
+                character.skills[0],
+                character.skills[4],
+                character.skills[5],
+                character.skills[6]
             ];
         }
 
-        // Reset cooldowns for skills 6, 7, 8, 9, 10, 11 (indices 1, 2, 3 in skillCooldowns)
         for (let i = 2; i <= 4; i++) {
             const skillBtn = document.getElementById(`skill${i}`);
             const skill = cultivatorSkills[i - 1];
             skillBtn.style.backgroundImage = `url(${skill.image})`;
             skillBtn.setAttribute('data-cooldown', skill.cooldown);
 
-            // Clear any existing countdown interval for this skill
             if (cooldownIntervals[i - 1]) {
                 clearInterval(cooldownIntervals[i - 1]);
                 cooldownIntervals[i - 1] = null;
             }
 
-            // Reset cooldown and enable the skill
             skillCooldowns[i - 1] = 0;
             skillBtn.disabled = false;
-            skillBtn.classList.add('glow'); // Add glow effect to indicate skills are ready
-            skillBtn.setAttribute('data-cooldown', `${parseInt(skill.cooldown)}s`); // Reset display
+            skillBtn.classList.add('glow');
+            skillBtn.setAttribute('data-cooldown', `${parseInt(skill.cooldown)}s`);
         }
 
         cooldownDurations = cultivatorSkills.map(skill => parseInt(skill.cooldown));
     }
 
-    // Set the cooldown and start the countdown for the specific skill
     skillCooldowns[skillIndex - 1] = cooldownDurations[skillIndex - 1];
     const button = document.getElementById(`skill${skillIndex}`);
     button.disabled = true;
-    button.classList.remove('glow'); // Remove glow effect during cooldown
+    button.classList.remove('glow');
     updateCooldowns(skillIndex - 1);
 }
 
 function updateCooldowns(skillIndex) {
     const button = document.getElementById(`skill${skillIndex + 1}`);
-    const startTime = Date.now(); // Record the start time
-    const duration = cooldownDurations[skillIndex] * 1000; // Convert to milliseconds
-    const slowdownFactor = 1.1; // Slow down by 10% (1s in game takes 1.1s real time)
+    const startTime = Date.now();
+    const duration = cooldownDurations[skillIndex] * 1000;
+    const slowdownFactor = 1.2;
 
-    // Clear any existing interval for this skill
     if (cooldownIntervals[skillIndex]) {
         clearInterval(cooldownIntervals[skillIndex]);
     }
 
-    // Start a new interval for this skill
     cooldownIntervals[skillIndex] = setInterval(() => {
-        const elapsed = Date.now() - startTime; // Time elapsed in milliseconds
-        const adjustedElapsed = elapsed / slowdownFactor; // Adjust elapsed time by slowdown factor
-        const remaining = Math.max(0, duration - adjustedElapsed); // Remaining time in milliseconds
-        skillCooldowns[skillIndex] = remaining / 1000; // Convert back to seconds
+        const elapsed = Date.now() - startTime;
+        const adjustedElapsed = elapsed / slowdownFactor;
+        const remaining = Math.max(0, duration - adjustedElapsed);
+        skillCooldowns[skillIndex] = remaining / 1000;
 
-        // Update the cooldown display
         button.setAttribute('data-cooldown', `${Math.ceil(skillCooldowns[skillIndex])}s`);
 
         if (skillCooldowns[skillIndex] <= 0) {
             clearInterval(cooldownIntervals[skillIndex]);
             cooldownIntervals[skillIndex] = null;
             button.disabled = false;
-            button.classList.add('glow'); // Add glow effect when cooldown is over
-            // Reset the cooldown display to the original value
+            button.classList.add('glow');
             button.setAttribute('data-cooldown', `${cooldownDurations[skillIndex]}s`);
         }
-    }, 100); // Update every 100ms for smooth display
+    }, 100);
 }
 
 function sketch(p) {
