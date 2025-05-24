@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fantasy Adventure Game</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -13,6 +14,7 @@
             <div class="menu-buttons">
                 <button class="menu-btn" onclick="showCharacterSelect()">🎮 Chơi</button>
                 <button class="menu-btn" onclick="showDonate()">💎 Donate</button>
+                <button class="menu-btn" onclick="showGuide()">📖 Hướng Dẫn</button>
                 <button class="menu-btn" onclick="showContribute()">🤝 Đóng góp</button>
                 <button class="menu-btn" onclick="exitGame()">🚪 Thoát</button>
             </div>
@@ -21,24 +23,21 @@
             <button class="back-btn" onclick="showMainMenu()">← Trở về</button>
             <div class="characters-container">
                 <div class="character-card" data-character="knight">
-                    <div class="character-image"><img src="imageknight.png" alt="Knight"></div>
+                    <div class="character-image"><img src="imageknighttachnen.png" alt="Knight"></div>
                     <div class="character-buttons">
                         <button class="char-btn" onclick="showSkillDetails('knight')">Chi tiết</button>
-                        <button class="char-btn gender-toggle" onclick="toggleGender(this)">Nữ</button>
                     </div>
                 </div>
                 <div class="character-card" data-character="cultivator">
-                    <div class="character-image"><img src="imagethanhtu.png" alt="Cultivator"></div>
+                    <div class="character-image"><img src="imagethanhtutachnen.png" alt="Cultivator"></div>
                     <div class="character-buttons">
                         <button class="char-btn" onclick="showSkillDetails('cultivator')">Chi tiết</button>
-                        <button class="char-btn gender-toggle" onclick="toggleGender(this)">Nữ</button>
                     </div>
                 </div>
                 <div class="character-card" data-character="soldier">
-                    <div class="character-image"><img src="imagebinhchung.png" alt="Soldier"></div>
+                    <div class="character-image"><img src="imagebinhchungtachnen.png" alt="Soldier"></div>
                     <div class="character-buttons">
                         <button class="char-btn" onclick="showSkillDetails('soldier')">Chi tiết</button>
-                        <button class="char-btn gender-toggle" onclick="toggleGender(this)">Nữ</button>
                     </div>
                 </div>
             </div>
@@ -49,6 +48,29 @@
                 <span class="close" onclick="closeModal()">×</span>
                 <div id="skillContent"></div>
             </div>
+        </div>
+        <div class="modal" id="guideModal">
+            <div class="modal-content">
+                <span class="close" onclick="closeGuide()">×</span>
+                <div id="guideContent"></div>
+            </div>
+        </div>
+        <div class="game-play" id="gamePlay" style="display: none;">
+            <div class="top-bar">
+                <div class="avatar-container">
+                    <img id="avatar" src="" alt="Character Avatar">
+                </div>
+                <div class="health-bar">
+                    <div class="health" id="health"></div>
+                </div>
+            </div>
+            <div class="skill-buttons">
+                <button class="skill-btn" id="skill1" onclick="useSkill(1)"></button>
+                <button class="skill-btn" id="skill2" onclick="useSkill(2)"></button>
+                <button class="skill-btn" id="skill3" onclick="useSkill(3)"></button>
+                <button class="skill-btn" id="skill4" onclick="useSkill(4)"></button>
+            </div>
+            <div id="p5-canvas"></div>
         </div>
     </div>
     <script src="script.js"></script>

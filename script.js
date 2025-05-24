@@ -1,9 +1,9 @@
 let selectedCharacter = null;
-let characterGenders = {
-    knight: 'male',
-    cultivator: 'male',
-    soldier: 'male'
-};
+let health = 100;
+let skillCooldowns = [0, 0, 0, 0];
+let cooldownDurations = [0, 0, 0, 0];
+let playerImage;
+let enemy = { x: 300, y: 300, health: 50, size: 70, image: null };
 
 const characterData = {
     knight: {
@@ -19,11 +19,12 @@ const characterData = {
         story: "Công chúa bị quỷ bắt, vương quốc giao nhiệm vụ",
         ending: "Cầu hôn tại lễ hội ánh sáng",
         skills: [
-            { name: "Thánh Khiên", desc: "Giảm 50% sát thương nhận vào trong 3 giây", cooldown: "10s" },
-            { name: "Hào Quang Chiến Binh", desc: "Hồi 150 HP tức thì", cooldown: "12s" },
-            { name: "Chém Nghiền Nát", desc: "Tăng 30% sát thương trong 5 giây", cooldown: "10s" },
-            { name: "Cuồng Kích", desc: "Tăng tốc đánh 40% trong 4 giây", cooldown: "12s" }
-        ]
+            { name: "Thánh Khiên", desc: "Giảm 50% sát thương nhận vào trong 3 giây", cooldown: "10s", image: "skill1.png" },
+            { name: "Hào Quang Chiến Binh", desc: "Hồi 150 HP tức thì", cooldown: "12s", image: "skill2.png" },
+            { name: "Chém Nghiền Nát", desc: "Tăng 30% sát thương trong 5 giây", cooldown: "10s", image: "skill3.png" },
+            { name: "Cuồng Kích", desc: "Tăng tốc đánh 40% trong 4 giây", cooldown: "12s", image: "skill4.png" }
+        ],
+        avatar: "imageknighttachnen.png"
     },
     cultivator: {
         name: "Thánh Tử",
@@ -38,14 +39,12 @@ const characterData = {
         story: "Thánh nữ sở hữu thiên phú cao, lúc độ kiếp với thiên đạo bị tiên ma tính kế",
         ending: "Cùng tu tiên quy ẩn nơi tiên cảnh",
         skills: [
-            { name: "Thức Tỉnh Linh Thể", desc: "Chuyển đổi giữa cận ↔ xa (0.5s delay)", cooldown: "5s" },
-            { name: "Kiếm Vũ Linh Hồn", desc: "Tăng 30% sát thương cận trong 5s (skill dạng cận)", cooldown: "10s" },
-            { name: "Phi Kiếm Hủy Diệt", desc: "Gây 100 AOE sát thương (skill dạng xa)", cooldown: "8s" },
-            { name: "Kiếm Hút Hồn", desc: "Hồi 10% máu theo damage gây ra (5s hiệu lực, skill dạng cận)", cooldown: "12s" },
-            { name: "Hư Không Tốc Bộ", desc: "Tăng tốc chạy 50% trong 3s (skill dạng xa)", cooldown: "10s" },
-            { name: "Kim Thân Phù", desc: "Giảm 50% sát thương trong 3s (skill cận)", cooldown: "10s" },
-            { name: "Tốc Kiếm Pháp", desc: "Tăng tốc đánh 40% trong 5s (skill xa)", cooldown: "10s" }
-        ]
+            { name: "Thức Tỉnh Linh Thể", desc: "Chuyển đổi giữa cận ↔ xa (0.5s delay)", cooldown: "5s", image: "skill5.png" },
+            { name: "Kiếm Vũ Linh Hồn", desc: "Tăng 30% sát thương cận trong 5s (skill dạng cận)", cooldown: "10s", image: "skill6.png" },
+            { name: "Phi Kiếm Hủy Diệt", desc: "Gây 100 AOE sát thương (skill dạng xa)", cooldown: "8s", image: "skill7.png" },
+            { name: "Kiếm Hút Hồn", desc: "Hồi 10% máu theo damage gây ra (5s hiệu lực, skill dạng cận)", cooldown: "12s", image: "skill8.png" }
+        ],
+        avatar: "imagethanhtutachnen.png"
     },
     soldier: {
         name: "Đặc Binh",
@@ -60,11 +59,12 @@ const characterData = {
         story: "Đại minh tinh số 1 ngành giải trí bị bắt cóc",
         ending: "Giải cứu, kết hôn và ẩn danh",
         skills: [
-            { name: "Nội Tại Tập Kích", desc: "Tăng 50% sát thương trong 4 giây", cooldown: "10s" },
-            { name: "Bọc Thép Chiến Thuật", desc: "Tăng 200 máu tạm thời trong 5 giây", cooldown: "12s" },
-            { name: "Đạn Xuyên Phá", desc: "+30% dame + làm chậm địch 3 giây", cooldown: "10s" },
-            { name: "Tiếp Đạn Nhanh", desc: "Tăng tốc đánh 50% trong 4 giây", cooldown: "10s" }
-        ]
+            { name: "Nội Tại Tập Kích", desc: "Tăng 50% sát thương trong 4 giây", cooldown: "10s", image: "skill9.png" },
+            { name: "Bọc Thép Chiến Thuật", desc: "Tăng 200 máu tạm thời trong 5 giây", cooldown: "12s", image: "skill10.png" },
+            { name: "Đạn Xuyên Phá", desc: "+30% dame + làm chậm địch 3 giây", cooldown: "10s", image: "skill11.png" },
+            { name: "Tiếp Đạn Nhanh", desc: "Tăng tốc đánh 50% trong 4 giây", cooldown: "10s", image: "skill12.png" }
+        ],
+        avatar: "imagebinhchungtachnen.png"
     }
 };
 
@@ -87,6 +87,19 @@ function showDonate() {
 
 function showContribute() {
     alert('🤝 Cảm ơn bạn muốn đóng góp! Hãy liên hệ với chúng tôi qua email: contribute@fantasyquest.com');
+}
+
+function showGuide() {
+    const modal = document.getElementById('guideModal');
+    document.getElementById('guideContent').innerHTML = `
+        <h2>📖 Hướng Dẫn</h2>
+        <p>WASD là di chuyển theo thứ tự là trên, trái, xuống, phải, J đánh thường, UIOP là kỹ năng 1 2 3 4.</p>
+    `;
+    modal.style.display = 'block';
+}
+
+function closeGuide() {
+    document.getElementById('guideModal').style.display = 'none';
 }
 
 function exitGame() {
@@ -113,43 +126,6 @@ function updateStartButton() {
     }
 }
 
-function toggleGender(button) {
-    const card = button.closest('.character-card');
-    const characterType = card.dataset.character;
-    
-    if (characterGenders[characterType] === 'male') {
-        characterGenders[characterType] = 'female';
-        button.textContent = 'Nam';
-        const image = card.querySelector('.character-image img');
-        switch(characterType) {
-            case 'knight':
-                image.src = 'imageprincess.png';
-                break;
-            case 'cultivator':
-                image.src = 'imagethanhnu.png';
-                break;
-            case 'soldier':
-                image.src = 'imagedannu.png';
-                break;
-        }
-    } else {
-        characterGenders[characterType] = 'male';
-        button.textContent = 'Nữ';
-        const image = card.querySelector('.character-image img');
-        switch(characterType) {
-            case 'knight':
-                image.src = 'imageknight.png';
-                break;
-            case 'cultivator':
-                image.src = 'imagethanhtu.png';
-                break;
-            case 'soldier':
-                image.src = 'imagebinhchung.png';
-                break;
-        }
-    }
-}
-
 function showSkillDetails(characterType) {
     const character = characterData[characterType];
     const modal = document.getElementById('skillModal');
@@ -162,7 +138,7 @@ function showSkillDetails(characterType) {
     `;
     
     for (let stat in character.stats) {
-        skillsHtml += `<p><strong>${stat}</strong> <span>${character.stats[stat]}</一支span></p>`;
+        skillsHtml += `<p><strong>${stat}</strong> <span>${character.stats[stat]}</span></p>`;
     }
     
     skillsHtml += `
@@ -192,10 +168,131 @@ function closeModal() {
 function startGame() {
     if (!selectedCharacter) return;
     
-    const characterName = characterData[selectedCharacter].name;
-    const gender = characterGenders[selectedCharacter] === 'male' ? 'Male' : 'Female';
-    
-    alert(`🚀 Bắt đầu phiêu lưu với ${characterName} (${gender})!\n\nGame sẽ được phát triển thêm trong phiên bản tiếp theo. Cảm ơn bạn đã chơi thử!`);
+    const character = characterData[selectedCharacter];
+    document.getElementById('characterSelect').style.display = 'none';
+    document.getElementById('gamePlay').style.display = 'block';
+    document.getElementById('avatar').src = character.avatar;
+    health = 100;
+    updateHealthBar();
+
+    for (let i = 1; i <= 4; i++) {
+        const skillBtn = document.getElementById(`skill${i}`);
+        const skill = character.skills[i - 1];
+        skillBtn.style.backgroundImage = `url(${skill.image})`;
+        skillBtn.setAttribute('data-cooldown', skill.cooldown);
+    }
+
+    cooldownDurations = character.skills.map(skill => parseInt(skill.cooldown));
+    skillCooldowns = [0, 0, 0, 0];
+
+    new p5(sketch);
+}
+
+function updateHealthBar() {
+    const healthElement = document.getElementById('health');
+    healthElement.style.width = `${health}%`;
+}
+
+function useSkill(skillIndex) {
+    if (skillCooldowns[skillIndex - 1] > 0) return;
+    skillCooldowns[skillIndex - 1] = cooldownDurations[skillIndex - 1];
+    const button = document.getElementById(`skill${skillIndex}`);
+    button.disabled = true;
+    updateCooldowns();
+}
+
+function updateCooldowns() {
+    const interval = setInterval(() => {
+        let allCooldownsDone = true;
+        for (let i = 0; i < skillCooldowns.length; i++) {
+            if (skillCooldowns[i] > 0) {
+                skillCooldowns[i] -= 0.1;
+                const button = document.getElementById(`skill${i + 1}`);
+                button.disabled = true;
+                allCooldownsDone = false;
+            } else if (skillCooldowns[i] <= 0 && button.disabled) {
+                const button = document.getElementById(`skill${i + 1}`);
+                button.disabled = false;
+            }
+        }
+        if (allCooldownsDone) clearInterval(interval);
+    }, 100);
+}
+
+let playerX, playerY;
+let playerSize = 70;
+
+function sketch(p) {
+    p.setup = function() {
+        p.createCanvas(window.innerWidth, window.innerHeight).parent('p5-canvas');
+        playerX = p.width / 2;
+        playerY = p.height / 2;
+        playerImage = p.loadImage(characterData[selectedCharacter].avatar);
+        enemy.image = p.loadImage(characterData[selectedCharacter].avatar);
+
+        for (let i = 0; i < 25; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'map-particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 6 + 's';
+            document.getElementById('p5-canvas').appendChild(particle);
+        }
+    };
+
+    p.draw = function() {
+        p.background(15, 12, 41);
+        for (let y = 0; y < p.height; y++) {
+            let inter = p.map(y, 0, p.height, 0, 1);
+            let c = p.lerpColor(p.color(15, 12, 41), p.color(48, 43, 99), inter);
+            p.stroke(c);
+            p.line(0, y, p.width, y);
+        }
+
+        p.imageMode(p.CENTER);
+        p.tint(255, 255, 255);
+        p.image(playerImage, playerX, playerY, playerSize, playerSize);
+
+        p.tint(255, 0, 0, 150);
+        p.image(enemy.image, enemy.x, enemy.y, enemy.size, enemy.size);
+
+        let dx = playerX - enemy.x;
+        let dy = playerY - enemy.y;
+        let distance = p.sqrt(dx * dx + dy * dy);
+        if (distance > 50) {
+            enemy.x += dx / distance * 2;
+            enemy.y += dy / distance * 2;
+        }
+
+        if (p.keyIsDown(87)) playerY -= 5;
+        if (p.keyIsDown(83)) playerY += 5;
+        if (p.keyIsDown(65)) playerX -= 5;
+        if (p.keyIsDown(68)) playerX += 5;
+
+        playerX = p.constrain(playerX, 0, p.width);
+        playerY = p.constrain(playerY, 0, p.height);
+        enemy.x = p.constrain(enemy.x, 0, p.width);
+        enemy.y = p.constrain(enemy.y, 0, p.height);
+
+        if (p.keyIsDown(74) && frameCount % 10 === 0) {
+            let dx = enemy.x - playerX;
+            let dy = enemy.y - playerY;
+            let distance = p.sqrt(dx * dx + dy * dy);
+            if (distance < 100) {
+                enemy.health -= 10;
+                if (enemy.health <= 0) enemy.health = 0;
+            }
+        }
+
+        if (p.keyIsDown(85) && skillCooldowns[0] <= 0) useSkill(1);
+        if (p.keyIsDown(73) && skillCooldowns[1] <= 0) useSkill(2);
+        if (p.keyIsDown(79) && skillCooldowns[2] <= 0) useSkill(3);
+        if (p.keyIsDown(80) && skillCooldowns[3] <= 0) useSkill(4);
+    };
+
+    p.windowResized = function() {
+        p.resizeCanvas(window.innerWidth, window.innerHeight);
+    };
 }
 
 function createParticles() {
@@ -224,9 +321,12 @@ document.querySelectorAll('.character-card').forEach(card => {
 });
 
 window.onclick = function(event) {
-    const modal = document.getElementById('skillModal');
-    if (event.target === modal) {
+    const skillModal = document.getElementById('skillModal');
+    const guideModal = document.getElementById('guideModal');
+    if (event.target === skillModal) {
         closeModal();
+    } else if (event.target === guideModal) {
+        closeGuide();
     }
 }
 

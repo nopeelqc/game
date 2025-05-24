@@ -109,9 +109,9 @@ body {
     position: relative;
     overflow: hidden;
     width: 100%;
-    max-width: 450px; /* Increased from 300px */
+    max-width: 450px;
     height: 100%;
-    max-height: 550px; /* Increased to accommodate larger card */
+    max-height: 550px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -132,7 +132,7 @@ body {
 .character-image {
     width: 100%;
     height: auto;
-    max-height: 350px; /* Increased from 200px */
+    max-height: 350px;
     object-fit: contain;
     margin-bottom: 1rem;
 }
@@ -152,13 +152,13 @@ body {
 }
 
 .char-btn {
-    padding: 1rem 2rem; /* Increased padding for larger buttons */
+    padding: 1rem 2rem;
     border: 2px solid #8b4513;
     background: linear-gradient(45deg, #667eea, #764ba2);
     color: white;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 1.1rem; /* Increased font size */
+    font-size: 1.1rem;
     transition: all 0.3s ease;
     flex: 1;
 }
@@ -166,14 +166,6 @@ body {
 .char-btn:hover {
     background: linear-gradient(45deg, #764ba2, #667eea);
     border-color: #ffd700;
-}
-
-.gender-toggle {
-    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-}
-
-.gender-toggle:hover {
-    background: linear-gradient(45deg, #ee5a24, #ff6b6b);
 }
 
 .modal {
@@ -281,6 +273,118 @@ body {
     box-shadow: 0 10px 20px rgba(0,0,0,0.3);
 }
 
+.game-play {
+    display: none;
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+.top-bar {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    z-index: 10;
+}
+
+.avatar-container {
+    width: 60px;
+    height: 60px;
+}
+
+.avatar-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.health-bar {
+    width: 250px;
+    height: 25px;
+    border: 2px solid #ffd700;
+    border-radius: 10px;
+    background: #2c1810;
+}
+
+.health {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    border-radius: 8px;
+    transition: width 0.3s ease;
+}
+
+.skill-buttons {
+    position: absolute;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.5rem;
+    z-index: 10;
+}
+
+.skill-btn {
+    width: 60px;
+    height: 60px;
+    border: 2px solid #8b4513;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    background-size: cover;
+    background-position: center;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.skill-btn::after {
+    content: attr(data-cooldown);
+    position: absolute;
+    bottom: 3px;
+    right: 3px;
+    font-size: 0.7rem;
+    color: #ff6b6b;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+}
+
+.skill-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: #4a2c20;
+}
+
+.skill-btn:hover:not(:disabled) {
+    border-color: #ffd700;
+    transform: scale(1.05);
+}
+
+#p5-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.map-particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #ffd700;
+    border-radius: 50%;
+    animation: mapFloat 6s ease-in-out infinite;
+    opacity: 0.5;
+}
+
+@keyframes mapFloat {
+    0%, 100% { transform: translateY(0px) translateX(0px); }
+    50% { transform: translateY(-40px) translateX(20px); }
+}
+
 @media (max-width: 768px) {
     .characters-container {
         grid-template-columns: 1fr;
@@ -292,17 +396,36 @@ body {
     }
     
     .character-image {
-        max-height: 200px; /* Adjusted for smaller screens */
+        max-height: 200px;
     }
 
     .character-card {
-        max-width: 300px; /* Adjusted for smaller screens */
+        max-width: 300px;
         max-height: 400px;
     }
 
     .char-btn {
         padding: 0.8rem 1.5rem;
         font-size: 0.9rem;
+    }
+
+    .health-bar {
+        width: 180px;
+        height: 20px;
+    }
+
+    .avatar-container {
+        width: 50px;
+        height: 50px;
+    }
+
+    .skill-btn {
+        width: 50px;
+        height: 50px;
+    }
+
+    .skill-btn::after {
+        font-size: 0.6rem;
     }
 }
 
