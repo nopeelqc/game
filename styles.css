@@ -353,11 +353,14 @@ body {
 .skill-btn::after {
     content: attr(data-cooldown);
     position: absolute;
-    bottom: 3px;
-    right: 3px;
-    font-size: 0.7rem;
+    bottom: 5px;
+    right: 5px;
+    font-size: 0.8rem;
     color: #ff6b6b;
-    text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+    background: rgba(0, 0, 0, 0.6);
+    padding: 2px 5px;
+    border-radius: 3px;
+    text-shadow: none;
 }
 
 .skill-btn:disabled {
@@ -369,6 +372,20 @@ body {
 .skill-btn:hover:not(:disabled) {
     border-color: #ffd700;
     transform: scale(1.05);
+}
+
+.skill-btn.glow {
+    box-shadow: 0 0 15px #ffd700, 0 0 25px #ffd700;
+    animation: glowPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes glowPulse {
+    from {
+        box-shadow: 0 0 15px #ffd700, 0 0 25px #ffd700;
+    }
+    to {
+        box-shadow: 0 0 25px #ffd700, 0 0 40px #ffd700;
+    }
 }
 
 #p5-canvas {

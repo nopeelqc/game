@@ -2,11 +2,18 @@ let selectedCharacter = null;
 let health = 100;
 let skillCooldowns = [0, 0, 0, 0];
 let cooldownDurations = [0, 0, 0, 0];
+let cooldownIntervals = [null, null, null, null]; // Store intervals for each skill
 let playerImage;
-let enemy = { x: 300, y: 300, health: 50, size: 70, image: null };
+let enemies = [
+    { x: 300, y: 300, health: 50, size: 70, image: null, type: 'knight' },
+    { x: 400, y: 200, health: 50, size: 70, image: null, type: 'cultivator' },
+    { x: 500, y: 400, health: 50, size: 70, image: null, type: 'soldier' }
+];
 let playerX, playerY;
 let playerSize = 70;
 let gameCanvas;
+let cultivatorForm = 'melee'; // Track the current form: 'melee' (cận) or 'ranged' (xa)
+let cultivatorSkills = []; // Store the current skills for Cultivator
 
 const characterData = {
     knight: {
@@ -42,10 +49,15 @@ const characterData = {
         story: "Thánh nữ sở hữu thiên phú cao, lúc độ kiếp với thiên đạo bị tiên ma tính kế",
         ending: "Cùng tu tiên quy ẩn nơi tiên cảnh",
         skills: [
-            { name: "Thức Tỉnh Linh Thể", desc: "Chuyển đổi giữa cận ↔ xa (0.5s delay)", cooldown: "5s", image: "skill5.png" },
-            { name: "Kiếm Vũ Linh Hồn", desc: "Tăng 30% sát thương cận trong 5s (skill dạng cận)", cooldown: "10s", image: "skill6.png" },
-            { name: "Phi Kiếm Hủy Diệt", desc: "Gây 100 AOE sát thương (skill dạng xa)", cooldown: "8s", image: "skill7.png" },
-            { name: "Kiếm Hút Hồn", desc: "Hồi 10% máu theo damage gây ra (5s hiệu lực, skill dạng cận)", cooldown: "12s", image: "skill8.png" }
+            { name: "Thức Tỉnh Linh Thể", desc: "Chuyển đổi giữa cận ↔ xa (0.5s delay)", cooldown: "20s", image: "skill5.png" },
+            // gần
+            { name: "Kiếm Vũ Linh Hồn", desc: "Tăng 30% sát thương cận trong 5s", cooldown: "10s", image: "skill6.png" },
+            { name: "Kiếm Hút Hồn", desc: "Hồi 10% máu theo damage gây ra (5s hiệu lực)", cooldown: "12s", image: "skill7.png" },
+            { name: "Linh Kiếm Trảm", desc: "Gây 150 sát thương cận, làm choáng 1s", cooldown: "15s", image: "skill8.png" },
+            // xa
+            { name: "Hư Không Tốc Bộ", desc: "Tăng tốc chạy 50% trong 3s", cooldown: "10s", image: "skill9.png" },
+            { name: "Lôi Kiếm Trận", desc: "Triệu hồi kiếm trận gây 50 sát thương/s trong 4s", cooldown: "14s", image: "skill10.png" },
+            { name: "Tốc Kiếm Pháp", desc: "Tăng tốc đánh 40% trong 5s", cooldown: "10s", image: "skill11.png" }
         ],
         avatar: "imagethanhtutachnen.png"
     },
@@ -59,13 +71,13 @@ const characterData = {
             "DPS:": "240",
             "Loại:": "Đánh xa, ST cao"
         },
-        story: "Đại minh tinh số 1 ngành giải trí bị bắt cóc",
+        story: "Đại minh tinh số 1 ngành giải trí bị bắt cóc, được thuê về để giải cứu",
         ending: "Giải cứu, kết hôn và ẩn danh",
         skills: [
-            { name: "Nội Tại Tập Kích", desc: "Tăng 50% sát thương trong 4 giây", cooldown: "10s", image: "skill9.png" },
-            { name: "Bọc Thép Chiến Thuật", desc: "Tăng 200 máu tạm thời trong 5 giây", cooldown: "12s", image: "skill10.png" },
-            { name: "Đạn Xuyên Phá", desc: "+30% dame + làm chậm địch 3 giây", cooldown: "10s", image: "skill11.png" },
-            { name: "Tiếp Đạn Nhanh", desc: "Tăng tốc đánh 50% trong 4 giây", cooldown: "10s", image: "skill12.png" }
+            { name: "Nội Tại Tập Kích", desc: "Tăng 50% sát thương trong 4 giây", cooldown: "10s", image: "skill12.png" },
+            { name: "Bọc Thép Chiến Thuật", desc: "Tăng 200 máu tạm thời trong 5 giây", cooldown: "12s", image: "skill13.png" },
+            { name: "Đạn Xuyên Phá", desc: "+30% dame + làm chậm địch 3 giây", cooldown: "10s", image: "skill14.png" },
+            { name: "Tiếp Đạn Nhanh", desc: "Tăng tốc đánh 50% trong 4 giây", cooldown: "10s", image: "skill15.png" }
         ],
         avatar: "imagebinhchungtachnen.png"
     }
@@ -106,7 +118,7 @@ function closeGuide() {
 }
 
 function exitGame() {
-    if(confirm('🚪 Bạn có chắc chắn muốn thoát game không?')) {
+    if (confirm('🚪 Bạn có chắc chắn muốn thoát game không?')) {
         window.close();
     }
 }
@@ -178,15 +190,28 @@ function startGame() {
     health = 100;
     updateHealthBar();
 
+    if (selectedCharacter === 'cultivator') {
+        cultivatorForm = 'melee';
+        cultivatorSkills = [
+            character.skills[0],
+            character.skills[1],
+            character.skills[2],
+            character.skills[3]
+        ];
+    } else {
+        cultivatorSkills = character.skills;
+    }
+
     for (let i = 1; i <= 4; i++) {
         const skillBtn = document.getElementById(`skill${i}`);
-        const skill = character.skills[i - 1];
+        const skill = cultivatorSkills[i - 1];
         skillBtn.style.backgroundImage = `url(${skill.image})`;
         skillBtn.setAttribute('data-cooldown', skill.cooldown);
     }
 
-    cooldownDurations = character.skills.map(skill => parseInt(skill.cooldown));
+    cooldownDurations = cultivatorSkills.map(skill => parseInt(skill.cooldown));
     skillCooldowns = [0, 0, 0, 0];
+    cooldownIntervals = [null, null, null, null]; // Reset intervals
 
     new p5(sketch);
 }
@@ -198,28 +223,88 @@ function updateHealthBar() {
 
 function useSkill(skillIndex) {
     if (skillCooldowns[skillIndex - 1] > 0) return;
+    
+    if (selectedCharacter === 'cultivator' && skillIndex === 1) {
+        cultivatorForm = cultivatorForm === 'melee' ? 'ranged' : 'melee';
+    
+        const character = characterData['cultivator'];
+        if (cultivatorForm === 'melee') {
+            cultivatorSkills = [
+                character.skills[0], // skill 5
+                character.skills[1], // skill 6
+                character.skills[2], // skill 7
+                character.skills[3]  // skill 8
+            ];
+        } else {
+            cultivatorSkills = [
+                character.skills[0], // skill 5
+                character.skills[4], // skill 9
+                character.skills[5], // skill 10
+                character.skills[6]  // skill 11
+            ];
+        }
+
+        // Reset cooldowns for skills 6, 7, 8, 9, 10, 11 (indices 1, 2, 3 in skillCooldowns)
+        for (let i = 2; i <= 4; i++) {
+            const skillBtn = document.getElementById(`skill${i}`);
+            const skill = cultivatorSkills[i - 1];
+            skillBtn.style.backgroundImage = `url(${skill.image})`;
+            skillBtn.setAttribute('data-cooldown', skill.cooldown);
+
+            // Clear any existing countdown interval for this skill
+            if (cooldownIntervals[i - 1]) {
+                clearInterval(cooldownIntervals[i - 1]);
+                cooldownIntervals[i - 1] = null;
+            }
+
+            // Reset cooldown and enable the skill
+            skillCooldowns[i - 1] = 0;
+            skillBtn.disabled = false;
+            skillBtn.classList.add('glow'); // Add glow effect to indicate skills are ready
+            skillBtn.setAttribute('data-cooldown', `${parseInt(skill.cooldown)}s`); // Reset display
+        }
+
+        cooldownDurations = cultivatorSkills.map(skill => parseInt(skill.cooldown));
+    }
+
+    // Set the cooldown and start the countdown for the specific skill
     skillCooldowns[skillIndex - 1] = cooldownDurations[skillIndex - 1];
     const button = document.getElementById(`skill${skillIndex}`);
     button.disabled = true;
-    updateCooldowns();
+    button.classList.remove('glow'); // Remove glow effect during cooldown
+    updateCooldowns(skillIndex - 1);
 }
 
-function updateCooldowns() {
-    const interval = setInterval(() => {
-        let allCooldownsDone = true;
-        for (let i = 0; i < skillCooldowns.length; i++) {
-            if (skillCooldowns[i] > 0) {
-                skillCooldowns[i] -= 0.1;
-                const button = document.getElementById(`skill${i + 1}`);
-                button.disabled = true;
-                allCooldownsDone = false;
-            } else if (skillCooldowns[i] <= 0 && button.disabled) {
-                const button = document.getElementById(`skill${i + 1}`);
-                button.disabled = false;
-            }
+function updateCooldowns(skillIndex) {
+    const button = document.getElementById(`skill${skillIndex + 1}`);
+    const startTime = Date.now(); // Record the start time
+    const duration = cooldownDurations[skillIndex] * 1000; // Convert to milliseconds
+    const slowdownFactor = 1.1; // Slow down by 10% (1s in game takes 1.1s real time)
+
+    // Clear any existing interval for this skill
+    if (cooldownIntervals[skillIndex]) {
+        clearInterval(cooldownIntervals[skillIndex]);
+    }
+
+    // Start a new interval for this skill
+    cooldownIntervals[skillIndex] = setInterval(() => {
+        const elapsed = Date.now() - startTime; // Time elapsed in milliseconds
+        const adjustedElapsed = elapsed / slowdownFactor; // Adjust elapsed time by slowdown factor
+        const remaining = Math.max(0, duration - adjustedElapsed); // Remaining time in milliseconds
+        skillCooldowns[skillIndex] = remaining / 1000; // Convert back to seconds
+
+        // Update the cooldown display
+        button.setAttribute('data-cooldown', `${Math.ceil(skillCooldowns[skillIndex])}s`);
+
+        if (skillCooldowns[skillIndex] <= 0) {
+            clearInterval(cooldownIntervals[skillIndex]);
+            cooldownIntervals[skillIndex] = null;
+            button.disabled = false;
+            button.classList.add('glow'); // Add glow effect when cooldown is over
+            // Reset the cooldown display to the original value
+            button.setAttribute('data-cooldown', `${cooldownDurations[skillIndex]}s`);
         }
-        if (allCooldownsDone) clearInterval(interval);
-    }, 100);
+    }, 100); // Update every 100ms for smooth display
 }
 
 function sketch(p) {
@@ -228,7 +313,9 @@ function sketch(p) {
         playerX = p.width / 2;
         playerY = p.height / 2;
         playerImage = p.loadImage(characterData[selectedCharacter].avatar);
-        enemy.image = p.loadImage(characterData[selectedCharacter].avatar);
+        enemies.forEach(enemy => {
+            enemy.image = p.loadImage(characterData[enemy.type].avatar);
+        });
 
         for (let i = 0; i < 25; i++) {
             const particle = document.createElement('div');
@@ -256,29 +343,33 @@ function sketch(p) {
         p.tint(255, 255, 255);
         p.image(playerImage, playerX, playerY, playerSize, playerSize);
 
-        p.tint(255, 0, 0, 150);
-        p.image(enemy.image, enemy.x, enemy.y, enemy.size, enemy.size);
+        enemies.forEach(enemy => {
+            if (enemy.health > 0) {
+                p.tint(255, 0, 0, 150);
+                p.image(enemy.image, enemy.x, enemy.y, enemy.size, enemy.size);
 
-        let dx = playerX - enemy.x;
-        let dy = playerY - enemy.y;
-        let distance = p.sqrt(dx * dx + dy * dy);
-        if (distance > 50) {
-            enemy.x += dx / distance * 2;
-            enemy.y += dy / distance * 2;
-        }
+                let dx = playerX - enemy.x;
+                let dy = playerY - enemy.y;
+                let distance = p.sqrt(dx * dx + dy * dy);
+                if (distance > 50) {
+                    enemy.x += dx / distance * 2;
+                    enemy.y += dy / distance * 2;
+                }
 
-        enemy.x = p.constrain(enemy.x, 0, p.width);
-        enemy.y = p.constrain(enemy.y, 0, p.height);
+                enemy.x = p.constrain(enemy.x, 0, p.width);
+                enemy.y = p.constrain(enemy.y, 0, p.height);
 
-        if (p.keyIsDown(74) && p.frameCount % 10 === 0) {
-            let dx = enemy.x - playerX;
-            let dy = enemy.y - playerY;
-            let distance = p.sqrt(dx * dx + dy * dy);
-            if (distance < 100) {
-                enemy.health -= 10;
-                if (enemy.health <= 0) enemy.health = 0;
+                if (p.keyIsDown(74) && p.frameCount % 10 === 0) {
+                    let dx = enemy.x - playerX;
+                    let dy = enemy.y - playerY;
+                    let distance = p.sqrt(dx * dx + dy * dy);
+                    if (distance < 100) {
+                        enemy.health -= 10;
+                        if (enemy.health <= 0) enemy.health = 0;
+                    }
+                }
             }
-        }
+        });
 
         if (p.keyIsDown(85) && skillCooldowns[0] <= 0) useSkill(1);
         if (p.keyIsDown(73) && skillCooldowns[1] <= 0) useSkill(2);
