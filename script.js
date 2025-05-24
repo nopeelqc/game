@@ -4,6 +4,9 @@ let skillCooldowns = [0, 0, 0, 0];
 let cooldownDurations = [0, 0, 0, 0];
 let playerImage;
 let enemy = { x: 300, y: 300, health: 50, size: 70, image: null };
+let playerX, playerY;
+let playerSize = 70;
+let gameCanvas;
 
 const characterData = {
     knight: {
@@ -219,12 +222,9 @@ function updateCooldowns() {
     }, 100);
 }
 
-let playerX, playerY;
-let playerSize = 70;
-
 function sketch(p) {
     p.setup = function() {
-        p.createCanvas(window.innerWidth, window.innerHeight).parent('p5-canvas');
+        gameCanvas = p.createCanvas(window.innerWidth, window.innerHeight).parent('p5-canvas');
         playerX = p.width / 2;
         playerY = p.height / 2;
         playerImage = p.loadImage(characterData[selectedCharacter].avatar);
@@ -242,12 +242,15 @@ function sketch(p) {
 
     p.draw = function() {
         p.background(15, 12, 41);
+        
         for (let y = 0; y < p.height; y++) {
             let inter = p.map(y, 0, p.height, 0, 1);
             let c = p.lerpColor(p.color(15, 12, 41), p.color(48, 43, 99), inter);
             p.stroke(c);
             p.line(0, y, p.width, y);
         }
+
+        handlePlayerMovement(p);
 
         p.imageMode(p.CENTER);
         p.tint(255, 255, 255);
@@ -264,17 +267,10 @@ function sketch(p) {
             enemy.y += dy / distance * 2;
         }
 
-        if (p.keyIsDown(87)) playerY -= 5;
-        if (p.keyIsDown(83)) playerY += 5;
-        if (p.keyIsDown(65)) playerX -= 5;
-        if (p.keyIsDown(68)) playerX += 5;
-
-        playerX = p.constrain(playerX, 0, p.width);
-        playerY = p.constrain(playerY, 0, p.height);
         enemy.x = p.constrain(enemy.x, 0, p.width);
         enemy.y = p.constrain(enemy.y, 0, p.height);
 
-        if (p.keyIsDown(74) && frameCount % 10 === 0) {
+        if (p.keyIsDown(74) && p.frameCount % 10 === 0) {
             let dx = enemy.x - playerX;
             let dy = enemy.y - playerY;
             let distance = p.sqrt(dx * dx + dy * dy);
@@ -293,6 +289,16 @@ function sketch(p) {
     p.windowResized = function() {
         p.resizeCanvas(window.innerWidth, window.innerHeight);
     };
+}
+
+function handlePlayerMovement(p) {
+    if (p.keyIsDown(87)) playerY -= 5;
+    if (p.keyIsDown(83)) playerY += 5;
+    if (p.keyIsDown(65)) playerX -= 5;
+    if (p.keyIsDown(68)) playerX += 5;
+
+    playerX = p.constrain(playerX, playerSize/2, p.width - playerSize/2);
+    playerY = p.constrain(playerY, playerSize/2, p.height - playerSize/2);
 }
 
 function createParticles() {
