@@ -17,9 +17,6 @@ let activeEffects = [];
 let currentTurn = 1;
 let p5Instance; // Store p5 instance
 let damageTexts = []; // Array to store damage text objects
-let backgroundBuffer; // Precomputed background
-let lastDomUpdate = 0; // For throttling DOM updates
-let lastAttackFrame = 0; // For debouncing player attacks
 
 const effectImages = {
     'giảm thương': 'giamthuong.png',
@@ -280,6 +277,7 @@ function startGame() {
     document.getElementById('gamePlay').style.display = 'block';
     document.getElementById('avatar').src = character.avatar;
 
+    // Set maxHealth and currentHealth based on character
     if (selectedCharacter === 'knight') {
         maxHealth = character.maxHealth;
     } else if (selectedCharacter === 'soldier') {
@@ -291,6 +289,7 @@ function startGame() {
     health = 100; // Percentage for UI
     updateHealthBar();
 
+    // Hide all boss UI elements by default
     document.getElementById('bossName1').style.display = 'none';
     document.getElementById('bossName2').style.display = 'none';
     document.getElementById('bossHealth1').parentElement.style.display = 'none';
@@ -328,6 +327,7 @@ function updateHealthBar() {
     const healthElement = document.getElementById('health');
     healthElement.style.width = `${health}%`;
     healthElement.setAttribute('title', `${Math.round(currentHealth)} / ${maxHealth}`);
+    console.log(`Player HP: ${Math.round(currentHealth)} / ${maxHealth}`);
     if (currentHealth <= 0) {
         alert('Bạn đã thua! Trò chơi kết thúc.');
         returnToMainMenu();
@@ -380,7 +380,10 @@ function addEffect(targetId, effectName) {
 
     const effectImg = document.createElement('img');
     effectImg.src = effectImages[effectName] || '';
-    if (!effectImg.src) return;
+    if (!effectImg.src) {
+        console.warn(`Effect image for ${effectName} not found in effectImages.`);
+        return;
+    }
 
     effectImg.style.opacity = '1';
     effectImg.style.width = '24px';
@@ -523,6 +526,7 @@ function useSkill(skillIndex) {
         }
     }
 
+    // Handle specific skill effects
     if (skill.name === "Hào Quang Chiến Binh" || skill.name === "Kiếm Hút Hồn") {
         currentHealth = Math.min(currentHealth + (skill.name === "Hào Quang Chiến Binh" ? 150 : 0.1 * characterData[selectedCharacter].attack), maxHealth);
         updateHealthBar();
@@ -553,7 +557,7 @@ function updateCooldowns(skillIndex) {
             cooldownIntervals[skillIndex] = null;
             button.disabled = false;
             button.classList.add('glow');
-            button.setAttribute('data-cooldown', `${duration}s`);
+            button.setAttribute('data-cooldown', `${cooldownDurations[skillIndex]}s`);
         }
     }, intervalTime);
 }
@@ -756,16 +760,18 @@ function calculateDamage(attacker, target, isPlayerAttack) {
     let baseDamage = isPlayerAttack ? (selectedCharacter === 'cultivator' ? (cultivatorForm === 'melee' ? characterData.cultivator.attackMelee : characterData.cultivator.attackRanged) : characterData[selectedCharacter].attack) : attacker.attack;
     let damageMultiplier = 1.0;
 
+    // Apply damage increase effects
     const activeDamageEffects = activeEffects.filter(e => e.effectName === 'tăng thương' && e.img.parentElement.id === (isPlayerAttack ? 'playerEffects' : `bossEffects${enemies.indexOf(attacker) % 2 + 1}`));
     activeDamageEffects.forEach(effect => {
         if (effect.effectName === 'tăng thương') {
-            damageMultiplier += (selectedCharacter === 'knight' && effect.effectName === 'tăng thương') ? 0.30 :
-                               (selectedCharacter === 'soldier' && effect.effectName === 'tăng thương') ? 0.50 :
-                               0;
+            damageMultiplier += (selectedCharacter === 'knight' && effect.effectName === 'tăng thương') ? 0.30 : // 30% from Chém Nghiền Nát
+                               (selectedCharacter === 'soldier' && effect.effectName === 'tăng thương') ? 0.50 : // 50% from Nội Tại Tập Kích
+                               0; // Default no increase for other characters
         }
     });
 
-    return Math.floor(baseDamage * damageMultiplier);
+    const finalDamage = Math.floor(baseDamage * damageMultiplier);
+    return finalDamage;
 }
 
 function showDamageText(x, y, damage) {
@@ -784,13 +790,19 @@ function startEnemyAttack(enemy) {
     enemy.attackInterval = setInterval(() => {
         if (isPaused || enemy.health <= 0 || currentHealth <= 0) return;
         const attackRange = enemy.type === 'regularMonster' ? 100 : 150;
-        if (!playerX || !playerY) return;
+        if (!playerX || !playerY) {
+            console.warn("Player position not defined!");
+            return;
+        }
         const distToPlayer = p5Instance.dist(playerX, playerY, enemy.x, enemy.y);
         if (distToPlayer < attackRange) {
             const damage = calculateDamage(enemy, null, false);
             currentHealth = Math.max(0, currentHealth - damage);
             showDamageText(playerX, playerY - playerSize / 2 - 10, damage);
+            console.log(`${enemy.name} attacked player for ${damage} damage! Player HP: ${currentHealth}/${maxHealth}`);
             updateHealthBar();
+        } else {
+            console.log(`${enemy.name} is too far to attack. Distance: ${distToPlayer}, Range: ${attackRange}`);
         }
     }, attackIntervalMs);
 }
@@ -799,9 +811,15 @@ function sketch(p) {
     p5Instance = p;
 
     p.preload = function() {
-        playerImage = p.loadImage(characterData[selectedCharacter].avatar);
+        playerImage = p.loadImage(characterData[selectedCharacter].avatar,
+            () => console.log('Player image loaded'),
+            () => console.error('Failed to load player image')
+        );
         enemies.forEach(enemy => {
-            enemy.image = p.loadImage(characterData[enemy.type].avatar);
+            enemy.image = p.loadImage(characterData[enemy.type].avatar,
+                () => console.log(`${enemy.type} image loaded`),
+                () => console.error(`Failed to load ${enemy.type} image`)
+            );
             if (enemy.type !== 'regularMonster') {
                 enemy.skillCooldowns = bossSkills[enemy.type].map(skill => skill.cooldown);
                 enemy.skillIntervals = new Array(bossSkills[enemy.type].length).fill(null);
@@ -814,15 +832,6 @@ function sketch(p) {
         gameCanvas = p.createCanvas(p.windowWidth, p.windowHeight).parent('p5-canvas');
         playerX = p.width / 2;
         playerY = p.height / 2;
-
-        // Precompute background gradient
-        backgroundBuffer = p.createGraphics(p.width, p.height);
-        for (let y = 0; y < p.height; y++) {
-            let inter = p.map(y, 0, p.height, 0, 1);
-            let c = p.lerpColor(p.color(15, 12, 41), p.color(48, 43, 99), inter);
-            backgroundBuffer.stroke(c);
-            backgroundBuffer.line(0, y, p.width, y);
-        }
 
         const existingParticles = document.querySelectorAll('#p5-canvas .map-particle');
         existingParticles.forEach(particle => particle.remove());
@@ -842,148 +851,128 @@ function sketch(p) {
             }
             startEnemyAttack(enemy);
         });
-
-        p.textFont('Arial');
     };
 
     p.draw = function() {
-        if (isPaused) return;
+    if (isPaused) return;
 
-        // Draw precomputed background
-        p.image(backgroundBuffer, 0, 0);
+    p.background(15, 12, 41);
 
-        handlePlayerMovement(p);
+    for (let y = 0; y < p.height; y++) {
+        let inter = p.map(y, 0, p.height, 0, 1);
+        let c = p.lerpColor(p.color(15, 12, 41), p.color(48, 43, 99), inter);
+        p.stroke(c);
+        p.line(0, y, p.width, y);
+    }
 
-        p.imageMode(p.CENTER);
-        if (playerImage && playerImage.width > 0) {
-            p.tint(255, 255, 255);
-            p.ellipse(playerX, playerY, playerSize, playerSize);
-            p.image(playerImage, playerX, playerY, playerSize, playerSize);
+    handlePlayerMovement(p);
+
+    p.imageMode(p.CENTER);
+    if (playerImage && playerImage.width > 0) {
+        p.tint(255, 255, 255);
+        p.ellipse(playerX, playerY, playerSize, playerSize);
+        p.image(playerImage, playerX, playerY, playerSize, playerSize);
+    } else {
+        p.fill(255, 0, 0);
+        p.ellipse(playerX, playerY, playerSize, playerSize);
+    }
+
+    enemies.forEach((enemy, index) => {
+        if (enemy.health <= 0) return;
+
+        const distToPlayer = p.dist(playerX, playerY, enemy.x, enemy.y);
+        if (distToPlayer > 600) return;
+
+        if (enemy.image && enemy.image.width > 0) {
+            p.tint(255, 0, 0, enemy.type === 'regularMonster' ? 0 : 150);
+            p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size);
+            p.image(enemy.image, enemy.x, enemy.y, enemy.size, enemy.size);
         } else {
-            p.fill(255, 0, 0);
-            p.ellipse(playerX, playerY, playerSize, playerSize);
+            p.fill(enemy.type === 'regularMonster' ? [0, 255, 0] : [255, 0, 0]);
+            p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size);
         }
 
-        const attackFrameInterval = Math.round(60 / characterData[selectedCharacter].attackSpeed);
-        const canAttack = p.frameCount - lastAttackFrame >= attackFrameInterval;
+        if (enemy.type === 'regularMonster') {
+            const hpW = 30, hpH = 5;
+            const hpPerc = Math.max(0, enemy.health / enemy.maxHealth);
+            p.fill(255, 0, 0);
+            p.rect(enemy.x - hpW / 2, enemy.y - enemy.size / 2 - 10, hpW, hpH);
+            p.fill(0, 255, 0);
+            p.rect(enemy.x - hpW / 2, enemy.y - enemy.size / 2 - 10, hpW * hpPerc, hpH);
+        }
 
-        const visibleEnemies = [];
-        enemies.forEach((enemy, index) => {
-            if (enemy.health <= 0) return;
+        let dx = playerX - enemy.x;
+        let dy = playerY - enemy.y;
+        let dist = distToPlayer;
+        if (dist > 50) {
+            enemy.x += (dx / dist) * 2;
+            enemy.y += (dy / dist) * 2;
+        }
 
-            const distToPlayer = p.dist(playerX, playerY, enemy.x, enemy.y);
-            if (distToPlayer > 600) return;
+        enemy.x = p.constrain(enemy.x, enemy.size / 2, p.width - enemy.size / 2);
+        enemy.y = p.constrain(enemy.y, enemy.size / 2, p.height - enemy.size / 2);
 
-            visibleEnemies.push({ enemy, index, distToPlayer });
-
-            if (enemy.image && enemy.image.width > 0) {
-                p.tint(255, 0, 0, enemy.type === 'regularMonster' ? 0 : 150);
-                p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size);
-                p.image(enemy.image, enemy.x, enemy.y, enemy.size, enemy.size);
-            } else {
-                p.fill(enemy.type === 'regularMonster' ? [0, 255, 0] : [255, 0, 0]);
-                p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size);
-            }
-
-            if (enemy.type === 'regularMonster') {
-                const hpW = 30, hpH = 5;
-                const hpPerc = Math.max(0, enemy.health / enemy.maxHealth);
-                p.fill(255, 0, 0);
-                p.rect(enemy.x - hpW / 2, enemy.y - enemy.size / 2 - 10, hpW, hpH);
-                p.fill(0, 255, 0);
-                p.rect(enemy.x - hpW / 2, enemy.y - enemy.size / 2 - 10, hpW * hpPerc, hpH);
-            }
-
-            let dx = playerX - enemy.x;
-            let dy = playerY - enemy.y;
-            if (distToPlayer > 50) {
-                enemy.x += (dx / distToPlayer) * 2;
-                enemy.y += (dy / distToPlayer) * 2;
-            }
-
-            enemy.x = p.constrain(enemy.x, enemy.size / 2, p.width - enemy.size / 2);
-            enemy.y = p.constrain(enemy.y, enemy.size / 2, p.height - enemy.size / 2);
-
-            if (p.keyIsDown(74) && canAttack) {
-                let attackRange = (selectedCharacter === 'soldier' || (selectedCharacter === 'cultivator' && cultivatorForm === 'ranged')) ? 100 : 50;
-                if (distToPlayer <= attackRange) {
-                    const damage = calculateDamage(null, enemy, true);
-                    enemy.health = Math.max(0, enemy.health - damage);
-                    showDamageText(enemy.x, enemy.y - enemy.size / 2 - 10, damage);
-                    if (enemy.health <= 0) {
-                        if (enemy.attackInterval) clearInterval(enemy.attackInterval);
-                        enemies = enemies.filter(e => e.health > 0);
-                        if (enemies.length === 0) {
-                            currentTurn++;
-                            if (currentTurn <= 4) {
-                                spawnEnemies();
-                                p.setup();
-                            } else {
-                                alert('Bạn đã hoàn thành game!');
-                                returnToMainMenu();
-                            }
+        if (p.keyIsDown(74) && p.frameCount % Math.round(60 / characterData[selectedCharacter].attackSpeed) === 0) {
+            let attackRange = (selectedCharacter === 'soldier' || (selectedCharacter === 'cultivator' && cultivatorForm === 'ranged')) ? 100 : 50;
+            if (distToPlayer <= attackRange) {
+                const damage = calculateDamage(null, enemy, true);
+                enemy.health = Math.max(0, enemy.health - damage);
+                showDamageText(enemy.x, enemy.y - enemy.size / 2 - 10, damage);
+                if (enemy.type !== 'regularMonster') {
+                    updateBossHealth(index % 2, enemy.health, enemy.maxHealth);
+                }
+                if (enemy.health <= 0) {
+                    if (enemy.attackInterval) clearInterval(enemy.attackInterval);
+                    enemies = enemies.filter(e => e.health > 0);
+                    if (enemies.length === 0) {
+                        currentTurn++;
+                        if (currentTurn <= 4) {
+                            spawnEnemies();
+                            p.setup();
+                        } else {
+                            alert('Bạn đã hoàn thành game!');
+                            returnToMainMenu();
                         }
                     }
                 }
             }
-        });
-
-        // Update last attack frame
-        if (p.keyIsDown(74) && canAttack) {
-            lastAttackFrame = p.frameCount;
         }
 
-        // Throttle DOM updates (every 500ms)
-        const now = Date.now();
-        if (now - lastDomUpdate >= 500) {
-            visibleEnemies.forEach(({ enemy, index }) => {
-                if (enemy.type !== 'regularMonster') {
-                    const bossIndex = index % 2;
-                    document.getElementById(`bossName${bossIndex + 1}`).textContent = enemy.name;
-                    document.getElementById(`bossName${bossIndex + 1}`).style.display = 'block';
-                    document.getElementById(`bossHealth${bossIndex + 1}`).parentElement.style.display = 'block';
-                    document.getElementById(`bossEffects${bossIndex + 1}`).style.display = 'block';
-                    updateBossHealth(bossIndex, enemy.health, enemy.maxHealth);
-                }
-            });
-            lastDomUpdate = now;
+        if (enemy.type !== 'regularMonster') {
+            const bossIndex = index % 2;
+            document.getElementById(`bossName${bossIndex + 1}`).textContent = enemy.name;
+            document.getElementById(`bossName${bossIndex + 1}`).style.display = 'block';
+            document.getElementById(`bossHealth${bossIndex + 1}`).parentElement.style.display = 'block';
+            document.getElementById(`bossEffects${bossIndex + 1}`).style.display = 'block';
         }
+    });
 
-        // Update damage texts (every 2 frames)
-        if (p.frameCount % 2 === 0) {
-            for (let i = damageTexts.length - 1; i >= 0; i--) {
-                let text = damageTexts[i];
-                p.fill(255, 0, 0, text.opacity);
-                p.textSize(16);
-                p.text(`-${text.damage}`, text.x, text.y);
-                text.y -= 1;
-                text.opacity -= 255 / text.life;
-                text.life--;
-                if (text.life <= 0) damageTexts.splice(i, 1);
-            }
+    if (p.frameCount % 2 === 0) {
+        for (let i = damageTexts.length - 1; i >= 0; i--) {
+            let text = damageTexts[i];
+            p.fill(255, 0, 0, text.opacity);
+            p.textSize(16);
+            p.text(`-${text.damage}`, text.x, text.y);
+            text.y -= 1;
+            text.opacity -= 255 / text.life;
+            text.life--;
+            if (text.life <= 0) damageTexts.splice(i, 1);
         }
+    }
 
-        // FPS counter
-        p.fill(255);
-        p.textSize(14);
-        p.text(`FPS: ${Math.round(p.frameRate())}`, 10, 20);
+    p.fill(255);
+    p.textSize(14);
+    p.text(`FPS: ${Math.round(p.frameRate())}`, 10, 20);
 
-        // Skill usage (debounced by cooldown)
-        if (p.keyIsDown(85)) useSkill(1);
-        if (p.keyIsDown(73)) useSkill(2);
-        if (p.keyIsDown(79)) useSkill(3);
-        if (p.keyIsDown(80)) useSkill(4);
-    };
+    if (p.keyIsDown(85)) useSkill(1);
+    if (p.keyIsDown(73)) useSkill(2);
+    if (p.keyIsDown(79)) useSkill(3);
+    if (p.keyIsDown(80)) useSkill(4);
+};
+
 
     p.windowResized = function() {
         p.resizeCanvas(p.windowWidth, p.windowHeight);
-        backgroundBuffer = p.createGraphics(p.windowWidth, p.windowHeight);
-        for (let y = 0; y < p.height; y++) {
-            let inter = p.map(y, 0, p.height, 0, 1);
-            let c = p.lerpColor(p.color(15, 12, 41), p.color(48, 43, 99), inter);
-            backgroundBuffer.stroke(c);
-            backgroundBuffer.line(0, y, p.width, y);
-        }
     };
 }
 
