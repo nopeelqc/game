@@ -225,7 +225,7 @@ function initDomCache() {
         enemyContainer.style.top = '0';
         enemyContainer.style.left = '0';
         enemyContainer.style.width = '100%';
-        enemyContainer.style.height = '100%';
+        enemyContainer.style.height = '100vh';
         enemyContainer.style.pointerEvents = 'none'; // Prevent interference with p5 canvas
         enemyContainer.style.zIndex = '10'; // Ensure enemies appear above canvas
         document.body.appendChild(enemyContainer);
@@ -850,11 +850,16 @@ function sketch(p) {
     };
 
     p.setup = function() {
-        gameCanvas = p.createCanvas(p.windowWidth, p.windowHeight).parent('p5-canvas');
+        // Set canvas to full screen
+        gameCanvas = p.createCanvas(window.innerWidth, window.innerHeight).parent('p5-canvas');
+        gameCanvas.style('position', 'absolute');
+        gameCanvas.style('top', '0');
+        gameCanvas.style('left', '0');
+        gameCanvas.style('z-index', '5'); // Below enemy container
         playerX = p.width / 2;
         playerY = p.height / 2;
 
-        // Precompute background gradient
+        // Precompute background gradient for full screen
         backgroundImage = p.createGraphics(p.width, p.height);
         for (let y = 0; y < p.height; y++) {
             let inter = p.map(y, 0, p.height, 0, 1);
@@ -963,7 +968,8 @@ function sketch(p) {
     };
 
     p.windowResized = function() {
-        p.resizeCanvas(p.windowWidth, p.windowHeight);
+        // Resize canvas to full screen on window resize
+        p.resizeCanvas(window.innerWidth, window.innerHeight);
         backgroundImage = p.createGraphics(p.width, p.height);
         for (let y = 0; y < p.height; y++) {
             let inter = p.map(y, 0, p.height, 0, 1);
@@ -971,6 +977,18 @@ function sketch(p) {
             backgroundImage.stroke(c);
             backgroundImage.line(0, y, p.width, y);
         }
+        // Update player position to center of new canvas
+        playerX = p.width / 2;
+        playerY = p.height / 2;
+        // Update enemy positions to fit new canvas
+        enemies.forEach(enemy => {
+            enemy.x = Math.random() * (p.width - enemy.size);
+            enemy.y = Math.random() * (p.height - enemy.size);
+            if (enemy.element) {
+                enemy.element.style.left = `${enemy.x - enemy.size / 2}px`;
+                enemy.element.style.top = `${enemy.y - enemy.size / 2}px`;
+            }
+        });
     };
 }
 
@@ -1019,10 +1037,10 @@ function updateGameState() {
 
 function handlePlayerMovement(p) {
     let playerSpeed = 5;
-    if (p.keyIsDown(87)) playerY -= playerSpeed;
-    if (p.keyIsDown(83)) playerY += playerSpeed;
-    if (p.keyIsDown(65)) playerX -= playerSpeed;
-    if (p.keyIsDown(68)) playerX += playerSpeed;
+    if (p.keyIsDown(87)) playerY -= playerSpeed; // W
+    if (p.keyIsDown(83)) playerY += playerSpeed; // S
+    if (p.keyIsDown(65)) playerX -= playerSpeed; // A
+    if (p.keyIsDown(68)) playerX += playerSpeed; // D
     playerX = p.constrain(playerX, playerSize / 2, p.width - playerSize / 2);
     playerY = p.constrain(playerY, playerSize / 2, p.height - playerSize / 2);
 }
