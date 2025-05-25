@@ -14,7 +14,7 @@ let gameCanvas;
 let cultivatorForm = 'melee';
 let cultivatorSkills = [];
 let isPaused = false;
-let activeEffects = []; // Array to track all active effects
+let activeEffects = [];
 
 const effectImages = {
     'giảm thương': 'giamthuong.png',
@@ -294,14 +294,12 @@ function updateBossHealth(index, healthPercent) {
 }
 
 function getEffectDuration(effectName) {
-    // Map for player skills
     const playerSkillMap = {
         ...characterData.knight.skills.reduce((acc, skill) => ({ ...acc, [skill.effect]: skill.duration }), {}),
         ...characterData.cultivator.skills.reduce((acc, skill) => ({ ...acc, [skill.effect]: skill.duration }), {}),
         ...characterData.soldier.skills.reduce((acc, skill) => ({ ...acc, [skill.effect]: skill.duration }), {})
     };
 
-    // Map for boss skills
     const bossSkillMap = {};
     Object.keys(bossSkills).forEach(bossType => {
         bossSkills[bossType].forEach(skill => {
@@ -309,7 +307,6 @@ function getEffectDuration(effectName) {
         });
     });
 
-    // Return duration from either player or boss skill map
     return playerSkillMap[effectName] || bossSkillMap[effectName] || 0;
 }
 
@@ -317,17 +314,13 @@ function addEffect(targetId, effectName) {
     const effectsContainer = document.getElementById(`${targetId}`);
     if (!effectsContainer) return;
 
-    // Get the actual duration from skill description
     const actualDuration = getEffectDuration(effectName);
-    if (actualDuration === 0) return; // Skip effects with no duration
+    if (actualDuration === 0) return;
 
-    // Check for existing effect to stack duration
     const existingEffect = activeEffects.find(e => e.img.parentElement === effectsContainer && e.effectName === effectName);
     if (existingEffect) {
-        // Calculate remaining time of the existing effect
         const elapsed = Date.now() - existingEffect.startTime;
         const remainingTime = Math.max(0, existingEffect.duration - elapsed);
-        // Add the new duration to the remaining time
         existingEffect.duration = remainingTime + (actualDuration * 1000);
         existingEffect.remainingTime = existingEffect.duration;
         existingEffect.startTime = Date.now();
@@ -352,7 +345,7 @@ function addEffect(targetId, effectName) {
     const effect = {
         img: effectImg,
         effectName: effectName,
-        duration: actualDuration * 1000, // Convert to milliseconds
+        duration: actualDuration * 1000,
         remainingTime: actualDuration * 1000,
         startTime: Date.now(),
         fadeTimeout: null,
@@ -389,14 +382,12 @@ function pauseGame() {
         noLoop();
     }
 
-    // Pause skill cooldowns
     cooldownIntervals.forEach(interval => {
         if (interval) {
             clearInterval(interval);
         }
     });
 
-    // Pause active effects
     activeEffects.forEach(effect => {
         if (effect.fadeTimeout) clearTimeout(effect.fadeTimeout);
         if (effect.removeTimeout) clearTimeout(effect.removeTimeout);
@@ -412,14 +403,12 @@ function resumeGame() {
         loop();
     }
 
-    // Resume skill cooldowns
     skillCooldowns.forEach((cooldown, i) => {
         if (cooldown > 0) {
             updateCooldowns(i);
         }
     });
 
-    // Resume active effects
     activeEffects.forEach(effect => {
         effect.paused = false;
         effect.startTime = Date.now();
@@ -470,12 +459,10 @@ function useSkill(skillIndex) {
 
     if (skill.effect) {
         if (debuffEffects.includes(skill.effect)) {
-            // Apply debuff to all bosses
             enemies.forEach((enemy, index) => {
                 addEffect(`bossEffects${index + 1}`, skill.effect);
             });
         } else {
-            // Apply buff to player
             addEffect('playerEffects', skill.effect);
         }
     }
@@ -511,12 +498,10 @@ function updateCooldowns(skillIndex) {
 }
 
 function returnToMainMenu() {
-    // Hide game and pause modal, show main menu
     document.getElementById('gamePlay').style.display = 'none';
     document.getElementById('pauseModal').style.display = 'none';
     document.getElementById('mainMenu').style.display = 'flex';
     
-    // Reset game state
     isPaused = false;
     selectedCharacter = null;
     health = 100;
@@ -533,7 +518,6 @@ function returnToMainMenu() {
         { x: 400, y: 200, health: 4000, size: 70, image: null, type: 'iceBoss', name: 'Boss Băng' }
     ];
     
-    // Clear skill buttons
     for (let i = 1; i <= 4; i++) {
         const skillBtn = document.getElementById(`skill${i}`);
         if (skillBtn) {
@@ -544,13 +528,11 @@ function returnToMainMenu() {
         }
     }
     
-    // Clear p5 canvas
     if (gameCanvas) {
         gameCanvas.remove();
         gameCanvas = null;
     }
     
-    // Clear effects
     document.getElementById('playerEffects').innerHTML = '';
     document.getElementById('bossEffects1').innerHTML = '';
     document.getElementById('bossEffects2').innerHTML = '';
@@ -560,10 +542,8 @@ function returnToMainMenu() {
     });
     activeEffects = [];
     
-    // Reset avatar
     document.getElementById('avatar').src = '';
     
-    // Stop p5 loop if active
     if (typeof noLoop !== 'undefined') {
         noLoop();
     }
@@ -654,7 +634,8 @@ function sketch(p) {
 
                 if (p.keyIsDown(74) && p.frameCount % 10 === 0) {
                     let distToEnemy = p.dist(playerX, playerY, enemy.x, enemy.y);
-                    if (distToEnemy < 100) {
+                    let attackRange = (selectedCharacter === 'soldier' || (selectedCharacter === 'cultivator' && cultivatorForm === 'ranged')) ? 100 : 50;
+                    if (distToEnemy < attackRange) {
                         enemy.health -= 10;
                         updateBossHealth(index, (enemy.health / 4000) * 100);
                         if (enemy.health <= 0) {

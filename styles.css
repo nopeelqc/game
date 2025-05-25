@@ -393,7 +393,7 @@ body {
 .player-effects {
     position: absolute;
     top: 4.5rem;
-    left: 5rem; /* Shifted right to avoid avatar overlap (avatar width 60px + gap 1rem) */
+    left: 5rem;
     display: flex;
     gap: 0.5rem;
     z-index: 10;
@@ -682,7 +682,7 @@ body {
 
     .player-effects {
         top: 3.5rem;
-        left: 4rem; /* Adjusted for smaller avatar size (50px + gap 0.5rem) */
+        left: 4rem;
     }
 
     .enemy-character {
