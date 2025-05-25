@@ -224,13 +224,26 @@ function initDomCache() {
         enemyContainer.style.position = 'absolute';
         enemyContainer.style.top = '0';
         enemyContainer.style.left = '0';
-        enemyContainer.style.width = '100%';
+        enemyContainer.style.width = '100vw';
         enemyContainer.style.height = '100vh';
         enemyContainer.style.pointerEvents = 'none'; // Prevent interference with p5 canvas
         enemyContainer.style.zIndex = '10'; // Ensure enemies appear above canvas
         document.body.appendChild(enemyContainer);
     }
     domCache.enemyContainer = enemyContainer;
+
+    // Ensure #p5-canvas is full-screen
+    let p5Canvas = document.getElementById('p5-canvas');
+    if (p5Canvas) {
+        p5Canvas.style.position = 'absolute';
+        p5Canvas.style.top = '0';
+        p5Canvas.style.left = '0';
+        p5Canvas.style.width = '100vw';
+        p5Canvas.style.height = '100vh';
+        p5Canvas.style.margin = '0';
+        p5Canvas.style.padding = '0';
+        p5Canvas.style.zIndex = '5';
+    }
 }
 
 function showCharacterSelect() {
@@ -855,6 +868,8 @@ function sketch(p) {
         gameCanvas.style('position', 'absolute');
         gameCanvas.style('top', '0');
         gameCanvas.style('left', '0');
+        gameCanvas.style('width', '100vw');
+        gameCanvas.style('height', '100vh');
         gameCanvas.style('z-index', '5'); // Below enemy container
         playerX = p.width / 2;
         playerY = p.height / 2;
@@ -897,7 +912,8 @@ function sketch(p) {
         if (now - lastUpdateTime < 16) return; // Throttle to ~60 FPS
         lastUpdateTime = now;
 
-        p.image(backgroundImage, 0, 0);
+        // Ensure background covers the entire canvas
+        p.image(backgroundImage, 0, 0, p.width, p.height);
         handlePlayerMovement(p);
 
         p.imageMode(p.CENTER);
@@ -1018,8 +1034,12 @@ function updateGameState() {
         if (distToPlayer > 50) {
             const dx = playerX - enemyX;
             const dy = playerY - enemyY;
-            enemy.x += (dx / distToPlayer) * 2;
-            enemy.y += (dy / distToPlayer) * 2;
+            const speed = 2;
+            enemy.x += (dx / distToPlayer) * speed;
+            enemy.y += (dy / distToPlayer) * speed;
+            // Constrain enemy position within canvas boundaries
+            enemy.x = Math.max(enemy.size / 2, Math.min(window.innerWidth - enemy.size / 2, enemy.x));
+            enemy.y = Math.max(enemy.size / 2, Math.min(window.innerHeight - enemy.size / 2, enemy.y));
             enemy.element.style.left = `${enemy.x - enemy.size / 2}px`;
             enemy.element.style.top = `${enemy.y - enemy.size / 2}px`;
         }
