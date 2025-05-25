@@ -854,126 +854,122 @@ function sketch(p) {
     };
 
     p.draw = function() {
-        if (isPaused) return;
+    if (isPaused) return;
 
-        p.background(15, 12, 41);
+    p.background(15, 12, 41);
 
-        for (let y = 0; y < p.height; y++) {
-            let inter = p.map(y, 0, p.height, 0, 1);
-            let c = p.lerpColor(p.color(15, 12, 41), p.color(48, 43, 99), inter);
-            p.stroke(c);
-            p.line(0, y, p.width, y);
-        }
+    for (let y = 0; y < p.height; y++) {
+        let inter = p.map(y, 0, p.height, 0, 1);
+        let c = p.lerpColor(p.color(15, 12, 41), p.color(48, 43, 99), inter);
+        p.stroke(c);
+        p.line(0, y, p.width, y);
+    }
 
-        handlePlayerMovement(p);
+    handlePlayerMovement(p);
 
-        p.imageMode(p.CENTER);
-        if (playerImage && playerImage.width > 0) {
-            p.tint(255, 255, 255);
-            p.ellipse(playerX, playerY, playerSize, playerSize);
-            p.image(playerImage, playerX, playerY, playerSize, playerSize);
+    p.imageMode(p.CENTER);
+    if (playerImage && playerImage.width > 0) {
+        p.tint(255, 255, 255);
+        p.ellipse(playerX, playerY, playerSize, playerSize);
+        p.image(playerImage, playerX, playerY, playerSize, playerSize);
+    } else {
+        p.fill(255, 0, 0);
+        p.ellipse(playerX, playerY, playerSize, playerSize);
+    }
+
+    enemies.forEach((enemy, index) => {
+        if (enemy.health <= 0) return;
+
+        const distToPlayer = p.dist(playerX, playerY, enemy.x, enemy.y);
+        if (distToPlayer > 600) return;
+
+        if (enemy.image && enemy.image.width > 0) {
+            p.tint(255, 0, 0, enemy.type === 'regularMonster' ? 0 : 150);
+            p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size);
+            p.image(enemy.image, enemy.x, enemy.y, enemy.size, enemy.size);
         } else {
-            p.fill(255, 0, 0);
-            p.ellipse(playerX, playerY, playerSize, playerSize);
+            p.fill(enemy.type === 'regularMonster' ? [0, 255, 0] : [255, 0, 0]);
+            p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size);
         }
 
-        enemies.forEach((enemy, index) => {
-            if (enemy.health > 0) {
-                if (enemy.image && enemy.image.width > 0) {
-                    p.tint(255, 0, 0, enemy.type === 'regularMonster' ? 0 : 150);
-                    p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size);
-                    p.image(enemy.image, enemy.x, enemy.y, enemy.size, enemy.size);
-                } else {
-                    p.fill(enemy.type === 'regularMonster' ? [0, 255, 0] : [255, 0, 0]);
-                    p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size);
+        if (enemy.type === 'regularMonster') {
+            const hpW = 30, hpH = 5;
+            const hpPerc = Math.max(0, enemy.health / enemy.maxHealth);
+            p.fill(255, 0, 0);
+            p.rect(enemy.x - hpW / 2, enemy.y - enemy.size / 2 - 10, hpW, hpH);
+            p.fill(0, 255, 0);
+            p.rect(enemy.x - hpW / 2, enemy.y - enemy.size / 2 - 10, hpW * hpPerc, hpH);
+        }
+
+        let dx = playerX - enemy.x;
+        let dy = playerY - enemy.y;
+        let dist = distToPlayer;
+        if (dist > 50) {
+            enemy.x += (dx / dist) * 2;
+            enemy.y += (dy / dist) * 2;
+        }
+
+        enemy.x = p.constrain(enemy.x, enemy.size / 2, p.width - enemy.size / 2);
+        enemy.y = p.constrain(enemy.y, enemy.size / 2, p.height - enemy.size / 2);
+
+        if (p.keyIsDown(74) && p.frameCount % Math.round(60 / characterData[selectedCharacter].attackSpeed) === 0) {
+            let attackRange = (selectedCharacter === 'soldier' || (selectedCharacter === 'cultivator' && cultivatorForm === 'ranged')) ? 100 : 50;
+            if (distToPlayer <= attackRange) {
+                const damage = calculateDamage(null, enemy, true);
+                enemy.health = Math.max(0, enemy.health - damage);
+                showDamageText(enemy.x, enemy.y - enemy.size / 2 - 10, damage);
+                if (enemy.type !== 'regularMonster') {
+                    updateBossHealth(index % 2, enemy.health, enemy.maxHealth);
                 }
-
-                // Draw health bar
-                if (enemy.type === 'regularMonster') {
-                    const healthBarWidth = 30;
-                    const healthBarHeight = 5;
-                    const healthPercent = Math.max(0, enemy.health / enemy.maxHealth);
-                    p.fill(255, 0, 0);
-                    p.rect(enemy.x - healthBarWidth / 2, enemy.y - enemy.size / 2 - 10, healthBarWidth, healthBarHeight);
-                    p.fill(0, 255, 0);
-                    p.rect(enemy.x - healthBarWidth / 2, enemy.y - enemy.size / 2 - 10, healthBarWidth * healthPercent, healthBarHeight);
-                }
-
-                if (!playerX || !playerY) return;
-
-                let dx = playerX - enemy.x;
-                let dy = playerY - enemy.y;
-                let distance = p.dist(playerX, playerY, enemy.x, enemy.y);
-                if (distance > 50) {
-                    enemy.x += (dx / distance) * 2;
-                    enemy.y += (dy / distance) * 2;
-                }
-
-                enemy.x = p.constrain(enemy.x, enemy.size / 2, p.width - enemy.size / 2);
-                enemy.y = p.constrain(enemy.y, enemy.size / 2, p.height - enemy.size / 2);
-
-                // Player attack logic
-                if (p.keyIsDown(74) && p.frameCount % Math.round(60 / characterData[selectedCharacter].attackSpeed) === 0) {
-                    let distToEnemy = p.dist(playerX, playerY, enemy.x, enemy.y);
-                    let attackRange = (selectedCharacter === 'soldier' || (selectedCharacter === 'cultivator' && cultivatorForm === 'ranged')) ? 100 : 50;
-                    if (distToEnemy <= attackRange) {
-                        const damage = calculateDamage(null, enemy, true);
-                        enemy.health = Math.max(0, enemy.health - damage);
-                        showDamageText(enemy.x, enemy.y - enemy.size / 2 - 10, damage);
-                        console.log(`Player attacked ${enemy.name} for ${damage} damage! Enemy HP: ${enemy.health}/${enemy.maxHealth}`);
-                        if (enemy.type !== 'regularMonster') {
-                            updateBossHealth(index % 2, enemy.health, enemy.maxHealth);
+                if (enemy.health <= 0) {
+                    if (enemy.attackInterval) clearInterval(enemy.attackInterval);
+                    enemies = enemies.filter(e => e.health > 0);
+                    if (enemies.length === 0) {
+                        currentTurn++;
+                        if (currentTurn <= 4) {
+                            spawnEnemies();
+                            p.setup();
+                        } else {
+                            alert('Bạn đã hoàn thành game!');
+                            returnToMainMenu();
                         }
-                        if (enemy.health <= 0) {
-                            enemy.health = 0;
-                            if (enemy.attackInterval) clearInterval(enemy.attackInterval);
-                            console.log(`${enemy.name} đã bị hạ gục!`);
-                            enemies = enemies.filter(e => e.health > 0);
-                            if (enemies.length === 0) {
-                                currentTurn++;
-                                if (currentTurn <= 4) {
-                                    spawnEnemies();
-                                    p.setup();
-                                } else {
-                                    alert('Bạn đã hoàn thành game!');
-                                    returnToMainMenu();
-                                }
-                            }
-                        }
-                    } else {
-                        console.log(`Player attack missed ${enemy.name}. Distance: ${distToEnemy}, Range: ${attackRange}`);
                     }
                 }
-
-                if (enemy.type !== 'regularMonster') {
-                    const bossIndex = index % 2;
-                    document.getElementById(`bossName${bossIndex + 1}`).textContent = enemy.name;
-                    document.getElementById(`bossName${bossIndex + 1}`).style.display = 'block';
-                    document.getElementById(`bossHealth${bossIndex + 1}`).parentElement.style.display = 'block';
-                    document.getElementById(`bossEffects${bossIndex + 1}`).style.display = 'block';
-                }
-            }
-        });
-
-        // Draw damage text
-        for (let i = damageTexts.length - 1; i >= 0; i--) {
-            let text = damageTexts[i];
-            p.fill(255, 0, 0, text.opacity); // Red color with fading opacity
-            p.textSize(16);
-            p.text(`-${text.damage}`, text.x, text.y);
-            text.y -= 1; // Move upward
-            text.opacity -= 255 / text.life; // Fade out
-            text.life--;
-            if (text.life <= 0) {
-                damageTexts.splice(i, 1);
             }
         }
 
-        if (p.keyIsDown(85)) useSkill(1);
-        if (p.keyIsDown(73)) useSkill(2);
-        if (p.keyIsDown(79)) useSkill(3);
-        if (p.keyIsDown(80)) useSkill(4);
-    };
+        if (enemy.type !== 'regularMonster') {
+            const bossIndex = index % 2;
+            document.getElementById(`bossName${bossIndex + 1}`).textContent = enemy.name;
+            document.getElementById(`bossName${bossIndex + 1}`).style.display = 'block';
+            document.getElementById(`bossHealth${bossIndex + 1}`).parentElement.style.display = 'block';
+            document.getElementById(`bossEffects${bossIndex + 1}`).style.display = 'block';
+        }
+    });
+
+    if (p.frameCount % 2 === 0) {
+        for (let i = damageTexts.length - 1; i >= 0; i--) {
+            let text = damageTexts[i];
+            p.fill(255, 0, 0, text.opacity);
+            p.textSize(16);
+            p.text(`-${text.damage}`, text.x, text.y);
+            text.y -= 1;
+            text.opacity -= 255 / text.life;
+            text.life--;
+            if (text.life <= 0) damageTexts.splice(i, 1);
+        }
+    }
+
+    p.fill(255);
+    p.textSize(14);
+    p.text(`FPS: ${Math.round(p.frameRate())}`, 10, 20);
+
+    if (p.keyIsDown(85)) useSkill(1);
+    if (p.keyIsDown(73)) useSkill(2);
+    if (p.keyIsDown(79)) useSkill(3);
+    if (p.keyIsDown(80)) useSkill(4);
+};
+
 
     p.windowResized = function() {
         p.resizeCanvas(p.windowWidth, p.windowHeight);
