@@ -32,8 +32,8 @@ const effectImages = {
     'mưa băng': 'muabang.png',
     'cuồng phong': 'cuongphong.png',
     'vụt lốc': 'vutloc.png',
-    'huyết hải': 'huuthai.png',
-    'huyết tế': 'huutte.png',
+    'huyết hải': 'huyethai.png',
+    'huyết tế': 'huyette.png',
     'gọi anh em': 'goianhem.png',
     'phím thủ': 'phimthu.png',
     'đập đất': 'dapdat.png',
@@ -41,12 +41,12 @@ const effectImages = {
     'lôi kiếp': 'loikiep.png',
     'uy áp': 'uyap.png',
     'trói buộc': 'troibuoc.png',
-    'nhất khí hóa tam thanh': 'nhatkhihotamthanh.png',
+    'nhất khí hóa tam thanh': 'nhatkhihoatamthanh.png',
     'đạn lửa': 'danlua.png',
     'khiên plasma': 'khienplasma.png',
     'bão từ': 'baotu.png',
     'drone hỗ trợ': 'dronehotro.png',
-    'gươm thiên địa': 'guomthiendi.png',
+    'gươm thiên địa': 'guomthiendia.png',
     'quang cầu': 'quangcau.png',
     'cánh sa ngã': 'canhsanga.png',
     'thiên giới trói buộc': 'thiengioitroibuoc.png'
@@ -163,7 +163,7 @@ const characterData = {
     giangHoMangBoss: { avatar: "bossgianghomang.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
     khongLoBoss: { avatar: "bosskhonglo.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
     thienDaoBoss: { avatar: "thiendao.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2 },
-    coGiBoss: { avatar: "cogi.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2 },
+    coGiBoss: { avatar: "sieucogioi.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2 },
     thienThanSaNgaBoss: { avatar: "thienthansanga.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2 }
 };
 
@@ -326,6 +326,7 @@ function updateHealthBar() {
     const healthElement = document.getElementById('health');
     healthElement.style.width = `${health}%`;
     healthElement.setAttribute('title', `${Math.round(currentHealth)} / ${maxHealth}`); // Show HP values on hover
+    console.log(`Player HP: ${Math.round(currentHealth)} / ${maxHealth}`); // Debugging log
     if (currentHealth <= 0) {
         alert('Bạn đã thua! Trò chơi kết thúc.');
         returnToMainMenu();
@@ -758,11 +759,21 @@ function startEnemyAttack(enemy) {
     const attackIntervalMs = (1 / enemy.attackSpeed) * 1000; // Convert attacks/s to interval in ms
     enemy.attackInterval = setInterval(() => {
         if (isPaused || enemy.health <= 0) return;
+        // Increase attack range to make it easier for enemies to hit the player
+        const attackRange = enemy.type === 'regularMonster' ? 100 : 150; // Increased range
+        if (!playerX || !playerY) {
+            console.warn("Player position not defined!");
+            return;
+        }
         const distToPlayer = p5Instance.dist(playerX, playerY, enemy.x, enemy.y);
-        const attackRange = enemy.type === 'regularMonster' ? 50 : 70;
         if (distToPlayer < attackRange) {
-            currentHealth -= enemy.attack;
+            // Ensure damage is applied
+            const damage = enemy.attack;
+            currentHealth -= damage;
+            console.log(`${enemy.name} attacked player for ${damage} damage! Player HP: ${currentHealth}/${maxHealth}`);
             updateHealthBar();
+        } else {
+            console.log(`${enemy.name} is too far to attack. Distance: ${distToPlayer}, Range: ${attackRange}`);
         }
     }, attackIntervalMs);
 }
@@ -870,8 +881,8 @@ function sketch(p) {
                     enemy.y += (dy / distance) * 2;
                 }
 
-                enemy.x = p.constrain(enemy.x, enemy.size / 2, p.width - enemy.size / 2);
-                enemy.y = p.constrain(enemy.y, enemy.size / 2, p.height - enemy.size / 2);
+                enemy.x = p.constrain(enemy.x, enemy.size / 2, p.width - playerSize / 2);
+                enemy.y = p.constrain(enemy.y, enemy.size / 2, p.height - playerSize / 2);
 
                 if (p.keyIsDown(74) && p.frameCount % (60 / characterData[selectedCharacter].attackSpeed) === 0) {
                     let distToEnemy = p.dist(playerX, playerY, enemy.x, enemy.y);
