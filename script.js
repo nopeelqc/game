@@ -1,5 +1,7 @@
 let selectedCharacter = null;
-let health = 100;
+let health = 100; // Percentage-based for UI
+let maxHealth = 1000; // Actual max HP based on character
+let currentHealth = maxHealth; // Actual current HP
 let skillCooldowns = [0, 0, 0, 0];
 let cooldownDurations = [0, 0, 0, 0];
 let cooldownIntervals = [null, null, null, null];
@@ -103,6 +105,9 @@ const characterData = {
         stats: { "Máu:": "1200 HP", "Sát thương:": "80", "Tốc đánh:": "1.2 đòn/s", "DPS:": "96", "Loại:": "Tanker, Cận chiến" },
         story: "Công chúa bị quỷ bắt, vương quốc giao nhiệm vụ",
         ending: "Cầu hôn tại lễ hội ánh sáng",
+        maxHealth: 1200,
+        attack: 80,
+        attackSpeed: 1.2,
         skills: [
             { name: "Thánh Khiên", desc: "Giảm 50% sát thương nhận vào trong 3 giây", cooldown: 10, effect: 'giảm thương', image: "skill1.png", duration: 3 },
             { name: "Hào Quang Chiến Binh", desc: "Hồi 150 HP tức thì", cooldown: 12, effect: 'hồi máu', image: "skill2.png", duration: 0.1 },
@@ -114,9 +119,14 @@ const characterData = {
     cultivator: {
         name: "Thánh Tử",
         type: "Phong cách Tu Tiên",
-        stats: { "Máu (Cận):": "800 HP", "Máu (Xa):": "900 HP", "ST (Cận):": "100", "ST (Xa):": "75 AOE", "Loại:": "Linh hoạt, Đa năng" },
+        stats: { "Máu (Cận):": "650 HP", "Máu (Xa):": "750 HP", "ST (Cận):": "100", "ST (Xa):": "75 AOE", "Loại:": "Linh hoạt, Đa năng" },
         story: "Thánh nữ sở hữu thiên phú cao, lúc độ kiếp với thiên đạo bị tiên ma tính kế",
         ending: "Cùng tu tiên quy ẩn nơi tiên cảnh",
+        maxHealthMelee: 650,
+        maxHealthRanged: 750,
+        attackMelee: 100,
+        attackRanged: 75,
+        attackSpeed: 1.5,
         skills: [
             { name: "Thức Tỉnh Linh Thể", desc: "Chuyển đổi giữa cận ↔ xa (0.5s delay)", cooldown: 20, effect: '', image: "skill5.png", duration: 0 },
             { name: "Kiếm Vũ Linh Hồn", desc: "Tăng 30% sát thương cận trong 5s", cooldown: 10, effect: 'tăng thương', image: "skill6.png", duration: 5 },
@@ -131,9 +141,12 @@ const characterData = {
     soldier: {
         name: "Đặc Binh",
         type: "Phong cách Hiện Đại",
-        stats: { "Máu:": "700 HP", "Sát thương:": "120", "Tốc đánh:": "2 đòn/s", "DPS:": "240", "Loại:": "Đánh xa, ST cao" },
+        stats: { "Máu:": "800 HP", "Sát thương:": "120", "Tốc đánh:": "2 đòn/s", "DPS:": "240", "Loại:": "Đánh xa, ST cao" },
         story: "Đại minh tinh số 1 ngành giải trí bị bắt cóc, được thuê về để giải cứu",
         ending: "Giải cứu, kết hôn và ẩn danh",
+        maxHealth: 800,
+        attack: 120,
+        attackSpeed: 2,
         skills: [
             { name: "Nội Tại Tập Kích", desc: "Tăng 50% sát thương trong 4 giây", cooldown: 10, effect: 'tăng thương', image: "skill12.png", duration: 4 },
             { name: "Bọc Thép Chiến Thuật", desc: "Tăng 200 máu tạm thời trong 5 giây", cooldown: 12, effect: '', image: "skill13.png", duration: 0 },
@@ -142,16 +155,16 @@ const characterData = {
         ],
         avatar: "imagebinhchungtachnen.png"
     },
-    regularMonster: { avatar: "quaithuong.png" },
-    fireBoss: { avatar: "bosslua.png", health: 4000 },
-    iceBoss: { avatar: "bossbang.png", health: 4000 },
-    tienBoss: { avatar: "bosstien.png", health: 4000 },
-    maBoss: { avatar: "bossma.png", health: 4000 },
-    giangHoMangBoss: { avatar: "bossgianghomang.png", health: 4000 },
-    khongLoBoss: { avatar: "bosskhonglo.png", health: 4000 },
-    thienDaoBoss: { avatar: "thiendao.png", health: 5000 },
-    coGiBoss: { avatar: "cogi.png", health: 5000 },
-    thienThanSaNgaBoss: { avatar: "thienthansanga.png", health: 6000 }
+    regularMonster: { avatar: "quaithuong.png", attack: 0, attackSpeed: 1 },
+    fireBoss: { avatar: "bosslua.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
+    iceBoss: { avatar: "bossbang.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
+    tienBoss: { avatar: "bosstien.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
+    maBoss: { avatar: "bossma.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
+    giangHoMangBoss: { avatar: "bossgianghomang.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
+    khongLoBoss: { avatar: "bosskhonglo.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
+    thienDaoBoss: { avatar: "thiendao.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2 },
+    coGiBoss: { avatar: "cogi.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2 },
+    thienThanSaNgaBoss: { avatar: "thienthansanga.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2 }
 };
 
 const regularBossTypes = ['fireBoss', 'iceBoss', 'tienBoss', 'maBoss', 'giangHoMangBoss', 'khongLoBoss'];
@@ -262,8 +275,19 @@ function startGame() {
     document.getElementById('characterSelect').style.display = 'none';
     document.getElementById('gamePlay').style.display = 'block';
     document.getElementById('avatar').src = character.avatar;
-    health = 100;
+
+    // Set maxHealth and currentHealth based on character
+    if (selectedCharacter === 'knight') {
+        maxHealth = character.maxHealth;
+    } else if (selectedCharacter === 'soldier') {
+        maxHealth = character.maxHealth;
+    } else if (selectedCharacter === 'cultivator') {
+        maxHealth = cultivatorForm === 'melee' ? character.maxHealthMelee : character.maxHealthRanged;
+    }
+    currentHealth = maxHealth;
+    health = 100; // Percentage for UI
     updateHealthBar();
+
     // Hide all boss UI elements by default
     document.getElementById('bossName1').style.display = 'none';
     document.getElementById('bossName2').style.display = 'none';
@@ -298,13 +322,21 @@ function startGame() {
 }
 
 function updateHealthBar() {
+    health = (currentHealth / maxHealth) * 100;
     const healthElement = document.getElementById('health');
     healthElement.style.width = `${health}%`;
+    healthElement.setAttribute('title', `${Math.round(currentHealth)} / ${maxHealth}`); // Show HP values on hover
+    if (currentHealth <= 0) {
+        alert('Bạn đã thua! Trò chơi kết thúc.');
+        returnToMainMenu();
+    }
 }
 
-function updateBossHealth(index, healthPercent) {
+function updateBossHealth(index, currentHealth, maxHealth) {
+    const healthPercent = (currentHealth / maxHealth) * 100;
     const healthElement = document.getElementById(`bossHealth${index + 1}`);
     healthElement.style.width = `${healthPercent}%`;
+    healthElement.setAttribute('title', `${Math.round(currentHealth)} / ${maxHealth}`); // Show HP values on hover
 }
 
 function getEffectDuration(effectName) {
@@ -408,6 +440,10 @@ function pauseGame() {
         effect.paused = true;
         effect.remainingTime = effect.duration - (Date.now() - effect.startTime);
     });
+
+    enemies.forEach(enemy => {
+        if (enemy.attackInterval) clearInterval(enemy.attackInterval);
+    });
 }
 
 function resumeGame() {
@@ -429,6 +465,10 @@ function resumeGame() {
         effect.duration = effect.remainingTime;
         updateEffect(effect);
     });
+
+    enemies.forEach(enemy => {
+        startEnemyAttack(enemy);
+    });
 }
 
 function useSkill(skillIndex) {
@@ -439,6 +479,9 @@ function useSkill(skillIndex) {
 
     if (selectedCharacter === 'cultivator' && skillIndex === 1) {
         cultivatorForm = cultivatorForm === 'melee' ? 'ranged' : 'melee';
+        maxHealth = cultivatorForm === 'melee' ? characterData.cultivator.maxHealthMelee : characterData.cultivator.maxHealthRanged;
+        currentHealth = Math.min(currentHealth, maxHealth); // Adjust current HP if max changes
+        updateHealthBar();
 
         const character = characterData['cultivator'];
         if (cultivatorForm === 'melee') {
@@ -480,6 +523,12 @@ function useSkill(skillIndex) {
             addEffect('playerEffects', skill.effect);
         }
     }
+
+    // Handle specific skill effects
+    if (skill.name === "Hào Quang Chiến Binh" || skill.name === "Kiếm Hút Hồn") {
+        currentHealth = Math.min(currentHealth + (skill.name === "Hào Quang Chiến Binh" ? 150 : 0.1 * characterData[selectedCharacter].attack), maxHealth);
+        updateHealthBar();
+    }
 }
 
 function updateCooldowns(skillIndex) {
@@ -519,6 +568,8 @@ function returnToMainMenu() {
     isPaused = false;
     selectedCharacter = null;
     health = 100;
+    maxHealth = 1000;
+    currentHealth = maxHealth;
     playerX = null;
     playerY = null;
     playerImage = null;
@@ -572,26 +623,40 @@ function spawnEnemies() {
 
     if (currentTurn === 1) {
         for (let i = 0; i < 20; i++) {
+            const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100; // 100-300 HP
+            const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30; // 30-60 damage
             enemies.push({
                 x: Math.random() * (canvasWidth - 50),
                 y: Math.random() * (canvasHeight - 50),
-                health: 200,
+                maxHealth: randomHP,
+                health: randomHP,
                 size: 50,
                 image: null,
                 type: 'regularMonster',
-                name: 'Quái Thường'
+                name: 'Quái Thường',
+                attack: randomAttack,
+                attackSpeed: 1,
+                attackInterval: null,
+                lastAttackFrame: 0
             });
         }
     } else if (currentTurn === 2) {
         for (let i = 0; i < 25; i++) {
+            const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
+            const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
             enemies.push({
                 x: Math.random() * (canvasWidth - 50),
                 y: Math.random() * (canvasHeight - 50),
-                health: 200,
+                maxHealth: randomHP,
+                health: randomHP,
                 size: 50,
                 image: null,
                 type: 'regularMonster',
-                name: 'Quái Thường'
+                name: 'Quái Thường',
+                attack: randomAttack,
+                attackSpeed: 1,
+                attackInterval: null,
+                lastAttackFrame: 0
             });
         }
         const randomBoss = regularBossTypes[Math.floor(Math.random() * regularBossTypes.length)];
@@ -599,23 +664,35 @@ function spawnEnemies() {
             enemies.push({
                 x: Math.random() * (canvasWidth - 70),
                 y: Math.random() * (canvasHeight - 70),
-                health: characterData[randomBoss].health,
+                maxHealth: characterData[randomBoss].maxHealth,
+                health: characterData[randomBoss].maxHealth,
                 size: 70,
                 image: null,
                 type: randomBoss,
-                name: String(randomBoss).replace('Boss', 'Boss ')
+                name: String(randomBoss).replace('Boss', 'Boss '),
+                attack: characterData[randomBoss].attack,
+                attackSpeed: characterData[randomBoss].attackSpeed,
+                attackInterval: null,
+                lastAttackFrame: 0
             });
         }
     } else if (currentTurn === 3) {
         for (let i = 0; i < 25; i++) {
+            const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
+            const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
             enemies.push({
                 x: Math.random() * (canvasWidth - 50),
                 y: Math.random() * (canvasHeight - 50),
-                health: 200,
+                maxHealth: randomHP,
+                health: randomHP,
                 size: 50,
                 image: null,
                 type: 'regularMonster',
-                name: 'Quái Thường'
+                name: 'Quái Thường',
+                attack: randomAttack,
+                attackSpeed: 1,
+                attackInterval: null,
+                lastAttackFrame: 0
             });
         }
         let availableBosses = [...regularBossTypes];
@@ -631,20 +708,30 @@ function spawnEnemies() {
             enemies.push({
                 x: Math.random() * (canvasWidth - 70),
                 y: Math.random() * (canvasHeight - 70),
-                health: characterData[boss1].health,
+                maxHealth: characterData[boss1].maxHealth,
+                health: characterData[boss1].maxHealth,
                 size: 70,
                 image: null,
                 type: boss1,
-                name: String(boss1).replace('Boss', 'Boss ')
+                name: String(boss1).replace('Boss', 'Boss '),
+                attack: characterData[boss1].attack,
+                attackSpeed: characterData[boss1].attackSpeed,
+                attackInterval: null,
+                lastAttackFrame: 0
             });
             enemies.push({
                 x: Math.random() * (canvasWidth - 70),
                 y: Math.random() * (canvasHeight - 70),
-                health: characterData[boss2].health,
+                maxHealth: characterData[boss2].maxHealth,
+                health: characterData[boss2].maxHealth,
                 size: 70,
                 image: null,
                 type: boss2,
-                name: String(boss2).replace('Boss', 'Boss ')
+                name: String(boss2).replace('Boss', 'Boss '),
+                attack: characterData[boss2].attack,
+                attackSpeed: characterData[boss2].attackSpeed,
+                attackInterval: null,
+                lastAttackFrame: 0
             });
         }
     } else if (currentTurn === 4) {
@@ -652,13 +739,32 @@ function spawnEnemies() {
         enemies.push({
             x: Math.random() * (canvasWidth - 70),
             y: Math.random() * (canvasHeight - 70),
-            health: characterData[superBoss].health,
+            maxHealth: characterData[superBoss].maxHealth,
+            health: characterData[superBoss].maxHealth,
             size: 70,
             image: null,
             type: superBoss,
-            name: String(superBoss).replace('Boss', 'Boss ')
+            name: String(superBoss).replace('Boss', 'Boss '),
+            attack: characterData[superBoss].attack,
+            attackSpeed: characterData[superBoss].attackSpeed,
+            attackInterval: null,
+            lastAttackFrame: 0
         });
     }
+}
+
+function startEnemyAttack(enemy) {
+    if (enemy.attackInterval) clearInterval(enemy.attackInterval);
+    const attackIntervalMs = (1 / enemy.attackSpeed) * 1000; // Convert attacks/s to interval in ms
+    enemy.attackInterval = setInterval(() => {
+        if (isPaused || enemy.health <= 0) return;
+        const distToPlayer = p5Instance.dist(playerX, playerY, enemy.x, enemy.y);
+        const attackRange = enemy.type === 'regularMonster' ? 50 : 70;
+        if (distToPlayer < attackRange) {
+            currentHealth -= enemy.attack;
+            updateHealthBar();
+        }
+    }, attackIntervalMs);
 }
 
 function sketch(p) {
@@ -703,6 +809,7 @@ function sketch(p) {
             if (enemy.type !== 'regularMonster') {
                 startBossSkillLoop(enemy, index);
             }
+            startEnemyAttack(enemy);
         });
     };
 
@@ -741,6 +848,17 @@ function sketch(p) {
                     p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size);
                 }
 
+                // Draw health bar for regular monsters
+                if (enemy.type === 'regularMonster') {
+                    const healthBarWidth = 30;
+                    const healthBarHeight = 5;
+                    const healthPercent = enemy.health / enemy.maxHealth;
+                    p.fill(255, 0, 0); // Background of health bar
+                    p.rect(enemy.x - healthBarWidth / 2, enemy.y - enemy.size / 2 - 10, healthBarWidth, healthBarHeight);
+                    p.fill(0, 255, 0); // Health bar
+                    p.rect(enemy.x - healthBarWidth / 2, enemy.y - enemy.size / 2 - 10, healthBarWidth * healthPercent, healthBarHeight);
+                }
+
                 // Ensure playerX and playerY are defined
                 if (!playerX || !playerY) return;
 
@@ -755,16 +873,18 @@ function sketch(p) {
                 enemy.x = p.constrain(enemy.x, enemy.size / 2, p.width - enemy.size / 2);
                 enemy.y = p.constrain(enemy.y, enemy.size / 2, p.height - enemy.size / 2);
 
-                if (p.keyIsDown(74) && p.frameCount % 10 === 0) {
+                if (p.keyIsDown(74) && p.frameCount % (60 / characterData[selectedCharacter].attackSpeed) === 0) {
                     let distToEnemy = p.dist(playerX, playerY, enemy.x, enemy.y);
                     let attackRange = (selectedCharacter === 'soldier' || (selectedCharacter === 'cultivator' && cultivatorForm === 'ranged')) ? 100 : 50;
                     if (distToEnemy < attackRange) {
-                        enemy.health -= 10;
+                        const attackDamage = selectedCharacter === 'cultivator' ? (cultivatorForm === 'melee' ? characterData.cultivator.attackMelee : characterData.cultivator.attackRanged) : characterData[selectedCharacter].attack;
+                        enemy.health -= attackDamage;
                         if (enemy.type !== 'regularMonster') {
-                            updateBossHealth(index % 2, (enemy.health / characterData[enemy.type].health) * 100);
+                            updateBossHealth(index % 2, enemy.health, enemy.maxHealth);
                         }
                         if (enemy.health <= 0) {
                             enemy.health = 0;
+                            if (enemy.attackInterval) clearInterval(enemy.attackInterval);
                             console.log(`${enemy.name} đã bị hạ gục!`);
                             if (enemies.every(e => e.health <= 0)) {
                                 currentTurn++;
