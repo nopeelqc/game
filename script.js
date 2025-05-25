@@ -12,12 +12,16 @@ let activeEffects = [];
 let currentTurn = 1;
 let damageTexts = [];
 let lastUpdateTime = 0;
+let gameTime = 0; // Tracks total active game time in seconds
 
 // Player DOM element and position
 let playerElement = null;
 let playerX, playerY;
 let playerSize = 70;
 let playerSpeed = 5;
+
+// Track pressed keys for diagonal movement
+const keysPressed = { w: false, a: false, s: false, d: false };
 
 // DOM-based enemy container
 let enemyContainer = null;
@@ -40,7 +44,9 @@ const domCache = {
     pauseModal: null,
     skillModal: null,
     guideModal: null,
-    enemyContainer: null // Container for enemies
+    enemyContainer: null, // Container for enemies
+    bossAvatar1: null, // Avatar image for boss 1
+    bossAvatar2: null  // Avatar image for boss 2
 };
 
 const effectImages = {
@@ -183,15 +189,15 @@ const characterData = {
         avatar: "imagebinhchungtachnen.png"
     },
     regularMonster: { avatar: "quaithuong.png", attack: 45, attackSpeed: 1 },
-    fireBoss: { avatar: "bosslua.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
-    iceBoss: { avatar: "bossbang.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
-    tienBoss: { avatar: "bosstien.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
-    maBoss: { avatar: "bossma.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
-    giangHoMangBoss: { avatar: "bossgianghomang.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
-    khongLoBoss: { avatar: "bosskhonglo.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
-    thienDaoBoss: { avatar: "thiendao.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2 },
-    coGiBoss: { avatar: "sieucogioi.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2 },
-    thienThanSaNgaBoss: { avatar: "thienthansanga.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2 }
+    fireBoss: { avatar: "bosslua.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8, name: "Hỏa Ma Vương" },
+    iceBoss: { avatar: "bossbang.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8, name: "Băng Ma Vương" },
+    tienBoss: { avatar: "bosstien.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8, name: "Hắc Tiên" },
+    maBoss: { avatar: "bossma.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8, name: "Ma Thần" },
+    giangHoMangBoss: { avatar: "bossgianghomang.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8, name: "Mafia Internet" },
+    khongLoBoss: { avatar: "bosskhonglo.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8, name: "Bự Ngu" },
+    thienDaoBoss: { avatar: "thiendao.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2, name: "Thiên Đạo" },
+    coGiBoss: { avatar: "sieucogioi.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2, name: "Siêu Cơ Giới Nhân" },
+    thienThanSaNgaBoss: { avatar: "thienthansanga.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2, name: "Thiên Thần Sa Ngã" }
 };
 
 const regularBossTypes = ['fireBoss', 'iceBoss', 'tienBoss', 'maBoss', 'giangHoMangBoss', 'khongLoBoss'];
@@ -219,7 +225,6 @@ function initDomCache() {
     domCache.pauseModal = document.getElementById('pauseModal');
     domCache.skillModal = document.getElementById('skillModal');
     domCache.guideModal = document.getElementById('guideModal');
-    // Create a new container for enemies
     let enemyContainer = document.getElementById('enemy-container');
     if (!enemyContainer) {
         enemyContainer = document.createElement('div');
@@ -234,6 +239,24 @@ function initDomCache() {
         document.body.appendChild(enemyContainer);
     }
     domCache.enemyContainer = enemyContainer;
+
+    domCache.bossAvatar1 = document.createElement('img');
+    domCache.bossAvatar1.className = 'boss-avatar';
+    domCache.bossAvatar1.style.width = '40px';
+    domCache.bossAvatar1.style.height = '40px';
+    domCache.bossAvatar1.style.borderRadius = '50%';
+    domCache.bossAvatar1.style.marginRight = '10px';
+    domCache.bossAvatar1.style.display = 'none';
+    domCache.bossName1.parentElement.insertBefore(domCache.bossAvatar1, domCache.bossName1);
+
+    domCache.bossAvatar2 = document.createElement('img');
+    domCache.bossAvatar2.className = 'boss-avatar';
+    domCache.bossAvatar2.style.width = '40px';
+    domCache.bossAvatar2.style.height = '40px';
+    domCache.bossAvatar2.style.borderRadius = '50%';
+    domCache.bossAvatar2.style.marginRight = '10px';
+    domCache.bossAvatar2.style.display = 'none';
+    domCache.bossName2.parentElement.insertBefore(domCache.bossAvatar2, domCache.bossName2);
 }
 
 function showCharacterSelect() {
@@ -262,9 +285,10 @@ function showGuide() {
     const guideContent = domCache.guideModal.querySelector('#guideContent');
     guideContent.innerHTML = `
         <h2>📖 Hướng Dẫn</h2>
-        <p>⚔️ **W, A, S, D**: Di chuyển theo thứ tự trên, trái, xuống, phải</p>
+        <p>⚔️ **W, A, S, D**: Di chuyển theo thứ tự trên, trái, xuống, phải (kết hợp để đi chéo)</p>
         <p>⚔️ **J**: Đánh thường</p>
         <p>⚔️ **U, I, O, P**: Kỹ năng 1, 2, 3, 4</p>
+        <p>⏸️ **Space**: Tạm dừng/tiếp tục trò chơi</p>
     `;
 }
 
@@ -327,18 +351,22 @@ function closeModal() {
 }
 
 function startGame() {
-    if (!selectedCharacter) return;
+    if (!selectedCharacter || !characterData[selectedCharacter]) {
+        console.error("Invalid or no character selected:", selectedCharacter);
+        alert("Vui lòng chọn một nhân vật trước khi bắt đầu!");
+        return;
+    }
     const character = characterData[selectedCharacter];
     domCache.characterSelect.style.display = 'none';
     domCache.gamePlay.style.display = 'block';
     domCache.avatar.src = character.avatar;
 
     if (selectedCharacter === 'knight') {
-        maxHealth = character.maxHealth;
+        maxHealth = character.maxHealth || 1000;
     } else if (selectedCharacter === 'soldier') {
-        maxHealth = character.maxHealth;
+        maxHealth = character.maxHealth || 1000;
     } else if (selectedCharacter === 'cultivator') {
-        maxHealth = cultivatorForm === 'melee' ? character.maxHealthMelee : character.maxHealthRanged;
+        maxHealth = cultivatorForm === 'melee' ? (character.maxHealthMelee || 650) : (character.maxHealthRanged || 750);
     }
     currentHealth = maxHealth;
     health = 100;
@@ -350,6 +378,8 @@ function startGame() {
     domCache.bossHealth2.parentElement.style.display = 'none';
     domCache.bossEffects1.style.display = 'none';
     domCache.bossEffects2.style.display = 'none';
+    domCache.bossAvatar1.style.display = 'none';
+    domCache.bossAvatar2.style.display = 'none';
 
     if (selectedCharacter === 'cultivator') {
         cultivatorForm = 'melee';
@@ -371,7 +401,6 @@ function startGame() {
     cooldownDurations = cultivatorSkills.map(skill => skill.cooldown);
     skillCooldowns = new Array(cultivatorSkills.length).fill(0);
 
-    // Initialize player DOM element
     playerX = window.innerWidth / 2;
     playerY = window.innerHeight / 2;
     playerElement = document.createElement('div');
@@ -390,24 +419,32 @@ function startGame() {
     playerElement.style.zIndex = '15';
     domCache.gamePlay.appendChild(playerElement);
 
-    // Set up game loop and event listeners
     spawnEnemies();
     setupGameLoop();
     setupEventListeners();
 }
 
 function setupEventListeners() {
-    // WASD movement
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keyup', handleKeyUp);
 }
 
 function handleKeyDown(event) {
+    if (event.key === ' ' && !isPaused) {
+        event.preventDefault(); // Prevent scrolling on spacebar press
+        pauseGame();
+        return;
+    } else if (event.key === ' ' && isPaused) {
+        event.preventDefault();
+        resumeGame();
+        return;
+    }
+
     if (isPaused) return;
     const key = event.key.toLowerCase();
     if (['w', 'a', 's', 'd'].includes(key)) {
         event.preventDefault(); // Prevent scrolling
-        movePlayer(key);
+        keysPressed[key] = true;
     }
     if (key === 'j') attackEnemies();
     if (key === 'u') useSkill(1);
@@ -417,37 +454,47 @@ function handleKeyDown(event) {
 }
 
 function handleKeyUp(event) {
-    // Could add logic for stopping movement if needed
+    const key = event.key.toLowerCase();
+    if (['w', 'a', 's', 'd'].includes(key)) {
+        keysPressed[key] = false;
+    }
 }
 
-function movePlayer(key) {
-    const speed = playerSpeed;
-    switch (key) {
-        case 'w':
-            playerY -= speed;
-            break;
-        case 's':
-            playerY += speed;
-            break;
-        case 'a':
-            playerX -= speed;
-            break;
-        case 'd':
-            playerX += speed;
-            break;
+function movePlayer() {
+    let dx = 0;
+    let dy = 0;
+
+    if (keysPressed.w) dy -= playerSpeed; // Up
+    if (keysPressed.s) dy += playerSpeed; // Down
+    if (keysPressed.a) dx -= playerSpeed; // Left
+    if (keysPressed.d) dx += playerSpeed; // Right
+
+    if (dx !== 0 && dy !== 0) {
+        const magnitude = Math.sqrt(dx * dx + dy * dy);
+        dx = (dx / magnitude) * playerSpeed;
+        dy = (dy / magnitude) * playerSpeed;
     }
-    // Constrain player within screen boundaries
-    playerX = Math.max(playerSize / 2, Math.min(window.innerWidth - playerSize / 2, playerX));
-    playerY = Math.max(playerSize / 2, Math.min(window.innerHeight - playerSize / 2, playerY));
-    playerElement.style.left = `${playerX - playerSize / 2}px`;
-    playerElement.style.top = `${playerY - playerSize / 2}px`;
+
+    if (dx !== 0 || dy !== 0) {
+        playerX += dx;
+        playerY += dy;
+        playerX = Math.max(playerSize / 2, Math.min(window.innerWidth - playerSize / 2, playerX));
+        playerY = Math.max(playerSize / 2, Math.min(window.innerHeight - playerSize / 2, playerY));
+        playerElement.style.left = `${playerX - playerSize / 2}px`;
+        playerElement.style.top = `${playerY - playerSize / 2}px`;
+    }
 }
 
 function updateHealthBar() {
-    health = Math.max(0, (currentHealth / maxHealth) * 100);
+    // Ensure currentHealth and maxHealth are valid numbers
+    const validCurrentHealth = isNaN(currentHealth) || currentHealth === undefined ? 0 : currentHealth;
+    const validMaxHealth = isNaN(maxHealth) || maxHealth === undefined || maxHealth === 0 ? 1 : maxHealth;
+    
+    health = Math.max(0, (validCurrentHealth / validMaxHealth) * 100);
     domCache.health.style.width = `${health}%`;
-    domCache.health.setAttribute('title', `${Math.round(currentHealth)} / ${maxHealth}`);
-    if (currentHealth <= 0) {
+    domCache.health.textContent = `${Math.round(validCurrentHealth)} / ${validMaxHealth}`; // Display current and max health
+    domCache.health.setAttribute('title', `${Math.round(validCurrentHealth)} / ${validMaxHealth}`);
+    if (validCurrentHealth <= 0) {
         alert('Bạn đã thua! Trò chơi kết thúc.');
         returnToMainMenu();
     }
@@ -457,6 +504,7 @@ function updateBossHealth(index, currentHealth, maxHealth) {
     const healthPercent = (currentHealth / maxHealth) * 100;
     const healthElement = index === 0 ? domCache.bossHealth1 : domCache.bossHealth2;
     healthElement.style.width = `${healthPercent}%`;
+    healthElement.textContent = `${Math.round(currentHealth)} / ${maxHealth}`; // Display current and max health
     healthElement.setAttribute('title', `${Math.round(currentHealth)} / ${maxHealth}`);
 }
 
@@ -483,9 +531,9 @@ function addEffect(targetId, effectName) {
 
     const existingEffect = activeEffects.find(e => e.img.parentElement === effectsContainer && e.effectName === effectName);
     if (existingEffect) {
-        existingEffect.startTime = Date.now();
-        existingEffect.duration = actualDuration * 1000;
-        existingEffect.remainingTime = existingEffect.duration;
+        existingEffect.startTime = gameTime;
+        existingEffect.duration = actualDuration;
+        existingEffect.remainingTime = actualDuration;
         return;
     }
 
@@ -503,9 +551,9 @@ function addEffect(targetId, effectName) {
     activeEffects.push({
         img: effectImg,
         effectName: effectName,
-        duration: actualDuration * 1000,
-        remainingTime: actualDuration * 1000,
-        startTime: Date.now(),
+        duration: actualDuration, // Duration in seconds
+        remainingTime: actualDuration,
+        startTime: gameTime,
         paused: false
     });
 }
@@ -513,10 +561,10 @@ function addEffect(targetId, effectName) {
 function updateEffectsAndCooldowns() {
     if (isPaused) return;
 
-    const now = Date.now();
+    // Update effects
     activeEffects = activeEffects.filter(effect => {
         if (effect.paused) return true;
-        effect.remainingTime = effect.duration - (now - effect.startTime);
+        effect.remainingTime = effect.duration - (gameTime - effect.startTime);
         if (effect.remainingTime <= 0) {
             effect.img.style.opacity = '0';
             setTimeout(() => effect.img.remove(), 300);
@@ -525,45 +573,91 @@ function updateEffectsAndCooldowns() {
         return true;
     });
 
+    // Update skill cooldowns in real-time
     skillCooldowns.forEach((cooldown, i) => {
-        if (cooldown <= 0) return;
-        skillCooldowns[i] = Math.max(0, cooldown - 1);
+        if (cooldown > 0) {
+            skillCooldowns[i] = Math.max(0, cooldown - (1 / 60)); // Ensure smooth countdown (approx. 60 FPS)
+        }
         const button = domCache.skillButtons[i];
-        button.setAttribute('data-cooldown', `${skillCooldowns[i]}s`);
-        if (skillCooldowns[i] <= 0) {
-            button.disabled = false;
-            button.classList.add('glow');
-            button.setAttribute('data-cooldown', `${cooldownDurations[i]}s`);
+        if (button) {
+            button.setAttribute('data-cooldown', `${Math.ceil(skillCooldowns[i])}s`);
+            if (skillCooldowns[i] <= 0) {
+                button.disabled = false;
+                button.classList.add('glow'); // Add glow when ready
+            } else {
+                button.disabled = true;
+                button.classList.remove('glow'); // Remove glow when on cooldown
+            }
+        }
+    });
+
+    // Update boss skill cooldowns in real-time
+    enemies.forEach(enemy => {
+        if (enemy.type !== 'regularMonster' && enemy.skillCooldowns) {
+            enemy.skillCooldowns.forEach((cooldown, i) => {
+                if (cooldown > 0) {
+                    enemy.skillCooldowns[i] = Math.max(0, cooldown - (1 / 60)); // Ensure smooth countdown
+                }
+                if (enemy.skillCooldowns[i] <= 0) {
+                    // Trigger the skill when cooldown reaches 0
+                    const skillData = bossSkills[enemy.type][i];
+                    if (enemy.health > 0) {
+                        const index = enemies.indexOf(enemy);
+                        if (debuffEffects.includes(skillData.effect)) {
+                            addEffect('playerEffects', skillData.effect);
+                        } else {
+                            addEffect(`bossEffects${index % 2 + 1}`, skillData.effect);
+                        }
+                    }
+                    enemy.skillCooldowns[i] = skillData.cooldown; // Reset cooldown
+                }
+            });
         }
     });
 }
 
 function pauseGame() {
+    if (isPaused) return; // Prevent multiple pause triggers
     isPaused = true;
     domCache.pauseModal.style.display = 'block';
     activeEffects.forEach(effect => {
         effect.paused = true;
-        effect.remainingTime = effect.duration - (Date.now() - effect.startTime);
+        effect.remainingTime = effect.duration - (gameTime - effect.startTime);
     });
+
+    // Store remaining cooldowns at the time of pause
+    skillCooldowns = skillCooldowns.map(cooldown => Math.max(0, cooldown));
     enemies.forEach(enemy => {
-        if (enemy.attackInterval) clearInterval(enemy.attackInterval);
-        if (enemy.type !== 'regularMonster') {
-            enemy.skillIntervals?.forEach(interval => clearInterval(interval));
+        if (enemy.skillCooldowns) {
+            enemy.skillCooldowns = enemy.skillCooldowns.map(cooldown => Math.max(0, cooldown));
         }
     });
 }
 
 function resumeGame() {
+    if (!isPaused) return; // Prevent multiple resume triggers
     isPaused = false;
     domCache.pauseModal.style.display = 'none';
     activeEffects.forEach(effect => {
         effect.paused = false;
-        effect.startTime = Date.now();
+        effect.startTime = gameTime;
         effect.duration = effect.remainingTime;
     });
+
+    // Restore cooldowns and set their start times to current gameTime
+    skillCooldowns.forEach((cooldown, i) => {
+        if (cooldown > 0) {
+            skillCooldowns[i] = cooldown;
+        }
+    });
     enemies.forEach(enemy => {
-        startEnemyAttack(enemy);
-        if (enemy.type !== 'regularMonster') startBossSkillLoop(enemy, enemies.indexOf(enemy));
+        if (enemy.skillCooldowns) {
+            enemy.skillCooldowns.forEach((cooldown, i) => {
+                if (cooldown > 0) {
+                    enemy.skillCooldowns[i] = cooldown;
+                }
+            });
+        }
     });
 }
 
@@ -606,7 +700,13 @@ function useSkill(skillIndex) {
     }
 
     if (skill.name === "Hào Quang Chiến Binh" || skill.name === "Kiếm Hút Hồn") {
-        currentHealth = Math.min(currentHealth + (skill.name === "Hào Quang Chiến Binh" ? 150 : 0.1 * characterData[selectedCharacter].attack), maxHealth);
+        const attackValue = selectedCharacter && characterData[selectedCharacter] && characterData[selectedCharacter].attack ? characterData[selectedCharacter].attack : 0;
+        const healAmount = skill.name === "Hào Quang Chiến Binh" ? 150 : 0.1 * attackValue;
+        if (isNaN(healAmount) || healAmount < 0) {
+            console.error(`Invalid heal amount for skill ${skill.name}: ${healAmount}`);
+            return;
+        }
+        currentHealth = Math.min(currentHealth + healAmount, maxHealth);
         updateHealthBar();
     }
 }
@@ -629,6 +729,8 @@ function returnToMainMenu() {
     enemies = [];
     currentTurn = 1;
     damageTexts = [];
+    gameTime = 0; // Reset game time
+    window.lastAttackTime = 0; // Reset last attack time to ensure attack functionality in new game
 
     domCache.skillButtons.forEach(btn => {
         if (btn) {
@@ -648,18 +750,18 @@ function returnToMainMenu() {
     domCache.bossName2.textContent = '';
     domCache.bossHealth1.style.width = '0%';
     domCache.bossHealth2.style.width = '0%';
-    // Remove player element
+    domCache.bossAvatar1.style.display = 'none';
+    domCache.bossAvatar2.style.display = 'none';
     if (playerElement) {
         playerElement.remove();
         playerElement = null;
     }
-    // Clear enemy elements
     if (domCache.enemyContainer) {
         domCache.enemyContainer.innerHTML = '';
     }
-    // Remove event listeners
     document.removeEventListener('keydown', handleKeyDown);
     document.removeEventListener('keyup', handleKeyUp);
+    Object.keys(keysPressed).forEach(key => keysPressed[key] = false);
 }
 
 function spawnEnemies() {
@@ -672,7 +774,7 @@ function spawnEnemies() {
 
     if (currentTurn === 1) {
         for (let i = 0; i < 3; i++) {
-            const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
+            const randomHP = Math.floor(Math.random() * (200 - 100 + 1)) + 100;
             const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
             const enemy = {
                 x: Math.random() * (canvasWidth - 50),
@@ -694,8 +796,8 @@ function spawnEnemies() {
             enemies.push(enemy);
         }
     } else if (currentTurn === 2) {
-        for (let i = 0; i < 3; i++) {
-            const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
+        for (let i = 0; i < 5; i++) {
+            const randomHP = Math.floor(Math.random() * (200 - 100 + 1)) + 100;
             const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
             const enemy = {
                 x: Math.random() * (canvasWidth - 50),
@@ -725,21 +827,22 @@ function spawnEnemies() {
             size: 70,
             image: characterData[randomBoss].avatar,
             type: randomBoss,
-            name: String(randomBoss).replace('Boss', 'Boss '),
+            name: characterData[randomBoss].name, // Use predefined name from characterData
             attack: characterData[randomBoss].attack,
             attackSpeed: characterData[randomBoss].attackSpeed,
             lastAttackTime: 0,
             skillCooldowns: bossSkills[randomBoss].map(skill => skill.cooldown),
             nextSkillIndex: 0,
-            element: null
+            element: null,
+            uiIndex: 0 // Assign to boss1 UI
         };
         boss.x = Math.max(boss.size / 2, Math.min(canvasWidth - boss.size / 2, boss.x));
         boss.y = Math.max(boss.size / 2, Math.min(canvasHeight - boss.size / 2, boss.y));
         createEnemyElement(boss);
         enemies.push(boss);
     } else if (currentTurn === 3) {
-        for (let i = 0; i < 3; i++) {
-            const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
+        for (let i = 0; i < 5; i++) {
+            const randomHP = Math.floor(Math.random() * (200 - 100 + 1)) + 100;
             const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
             const enemy = {
                 x: Math.random() * (canvasWidth - 50),
@@ -761,43 +864,45 @@ function spawnEnemies() {
             enemies.push(enemy);
         }
         let availableBosses = [...regularBossTypes];
-        const usedBoss = enemies.find(e => e.type !== 'regularMonster')?.type;
+        const usedBoss = enemies.find(e => e.type !== 'regularMonster')?.type || null;
         if (usedBoss) availableBosses = availableBosses.filter(b => b !== usedBoss);
-        const boss1 = availableBosses[Math.floor(Math.random() * availableBosses.length)];
-        availableBosses = availableBosses.filter(b => b !== boss1);
-        const boss2 = availableBosses[Math.floor(Math.random() * availableBosses.length)];
-        if (boss1 && boss2) {
+        const boss1Type = availableBosses[Math.floor(Math.random() * availableBosses.length)];
+        availableBosses = availableBosses.filter(b => b !== boss1Type);
+        const boss2Type = availableBosses[Math.floor(Math.random() * availableBosses.length)];
+        if (boss1Type && boss2Type) {
             const enemy1 = {
                 x: Math.random() * (canvasWidth - 70),
                 y: Math.random() * (canvasHeight - 70),
-                maxHealth: characterData[boss1].maxHealth,
-                health: characterData[boss1].maxHealth,
+                maxHealth: characterData[boss1Type].maxHealth,
+                health: characterData[boss1Type].maxHealth,
                 size: 70,
-                image: characterData[boss1].avatar,
-                type: boss1,
-                name: String(boss1).replace('Boss', 'Boss '),
-                attack: characterData[boss1].attack,
-                attackSpeed: characterData[boss1].attackSpeed,
+                image: characterData[boss1Type].avatar,
+                type: boss1Type,
+                name: characterData[boss1Type].name, // Use predefined name from characterData
+                attack: characterData[boss1Type].attack,
+                attackSpeed: characterData[boss1Type].attackSpeed,
                 lastAttackTime: 0,
-                skillCooldowns: bossSkills[boss1].map(skill => skill.cooldown),
+                skillCooldowns: bossSkills[boss1Type].map(skill => skill.cooldown),
                 nextSkillIndex: 0,
-                element: null
+                element: null,
+                uiIndex: 0 // Assign to boss1 UI
             };
             const enemy2 = {
                 x: Math.random() * (canvasWidth - 70),
                 y: Math.random() * (canvasHeight - 70),
-                maxHealth: characterData[boss2].maxHealth,
-                health: characterData[boss2].maxHealth,
+                maxHealth: characterData[boss2Type].maxHealth,
+                health: characterData[boss2Type].maxHealth,
                 size: 70,
-                image: characterData[boss2].avatar,
-                type: boss2,
-                name: String(boss2).replace('Boss', 'Boss '),
-                attack: characterData[boss2].attack,
-                attackSpeed: characterData[boss2].attackSpeed,
+                image: characterData[boss2Type].avatar,
+                type: boss2Type,
+                name: characterData[boss2Type].name, // Use predefined name from characterData
+                attack: characterData[boss2Type].attack,
+                attackSpeed: characterData[boss2Type].attackSpeed,
                 lastAttackTime: 0,
-                skillCooldowns: bossSkills[boss2].map(skill => skill.cooldown),
+                skillCooldowns: bossSkills[boss2Type].map(skill => skill.cooldown),
                 nextSkillIndex: 0,
-                element: null
+                element: null,
+                uiIndex: 1 // Assign to boss2 UI
             };
             enemy1.x = Math.max(enemy1.size / 2, Math.min(canvasWidth - enemy1.size / 2, enemy1.x));
             enemy1.y = Math.max(enemy1.size / 2, Math.min(canvasHeight - enemy1.size / 2, enemy1.y));
@@ -817,13 +922,14 @@ function spawnEnemies() {
             size: 70,
             image: characterData[superBoss].avatar,
             type: superBoss,
-            name: String(superBoss).replace('Boss', 'Boss '),
+            name: characterData[superBoss].name, // Use predefined name from characterData
             attack: characterData[superBoss].attack,
             attackSpeed: characterData[superBoss].attackSpeed,
             lastAttackTime: 0,
             skillCooldowns: bossSkills[superBoss].map(skill => skill.cooldown),
             nextSkillIndex: 0,
-            element: null
+            element: null,
+            uiIndex: 0 // Assign to boss1 UI
         };
         boss.x = Math.max(boss.size / 2, Math.min(canvasWidth - boss.size / 2, boss.x));
         boss.y = Math.max(boss.size / 2, Math.min(canvasHeight - boss.size / 2, boss.y));
@@ -831,19 +937,26 @@ function spawnEnemies() {
         enemies.push(boss);
     }
 
-    // Update boss UI
-    enemies.forEach((enemy, index) => {
-        if (enemy.type !== 'regularMonster') {
-            const bossIndex = index % 2;
+    enemies.forEach(enemy => {
+        if (enemy.type !== 'regularMonster' && enemy.uiIndex !== undefined) {
+            const bossIndex = enemy.uiIndex;
             const bossNameElement = bossIndex === 0 ? domCache.bossName1 : domCache.bossName2;
             const bossHealthElement = bossIndex === 0 ? domCache.bossHealth1 : domCache.bossHealth2;
             const bossEffectsElement = bossIndex === 0 ? domCache.bossEffects1 : domCache.bossEffects2;
+            const bossAvatarElement = bossIndex === 0 ? domCache.bossAvatar1 : domCache.bossAvatar2;
             bossNameElement.textContent = enemy.name;
             bossNameElement.style.display = 'block';
             bossHealthElement.parentElement.style.display = 'block';
             bossEffectsElement.style.display = 'block';
+            bossAvatarElement.src = enemy.image;
+            bossAvatarElement.style.display = 'inline-block';
             updateBossHealth(bossIndex, enemy.health, enemy.maxHealth);
         }
+    });
+
+    enemies.forEach((enemy, index) => {
+        startEnemyAttack(enemy);
+        if (enemy.type !== 'regularMonster') startBossSkillLoop(enemy, index);
     });
 }
 
@@ -857,24 +970,19 @@ function createEnemyElement(enemy) {
     img.style.objectFit = 'contain';
     enemyElement.appendChild(img);
 
-    const healthBar = document.createElement('div');
-    healthBar.className = 'health-bar';
-    const health = document.createElement('div');
-    health.className = 'health';
     if (enemy.type === 'regularMonster') {
+        const healthBar = document.createElement('div');
+        healthBar.className = 'health-bar';
+        const health = document.createElement('div');
+        health.className = 'health';
         healthBar.style.width = '20px';
         healthBar.style.height = '3px';
         healthBar.style.backgroundColor = 'red';
         health.style.backgroundColor = 'green';
-    } else {
-        healthBar.style.width = '30px';
-        healthBar.style.height = '5px';
-        healthBar.style.backgroundColor = '#555';
-        health.style.backgroundColor = 'green';
+        health.style.width = '100%';
+        healthBar.appendChild(health);
+        enemyElement.appendChild(healthBar);
     }
-    health.style.width = '100%';
-    healthBar.appendChild(health);
-    enemyElement.appendChild(healthBar);
 
     enemyElement.style.position = 'absolute';
     enemyElement.style.left = `${enemy.x - enemy.size / 2}px`;
@@ -887,30 +995,39 @@ function createEnemyElement(enemy) {
     } else {
         console.warn('Enemy container not found. Cannot append enemy element.');
     }
-
-    if (enemy.type !== 'regularMonster') {
-        const nameElement = document.createElement('div');
-        nameElement.className = 'boss-name';
-        nameElement.textContent = enemy.name;
-        enemyElement.appendChild(nameElement);
-    }
 }
 
 function calculateDamage(attacker, target, isPlayerAttack) {
-    let baseDamage = isPlayerAttack ? 
-        (selectedCharacter === 'cultivator' ? 
-            (cultivatorForm === 'melee' ? characterData.cultivator.attackMelee : characterData.cultivator.attackRanged) : 
-            characterData[selectedCharacter].attack) : 
-        attacker.attack;
+    let baseDamage;
+    if (isPlayerAttack) {
+        // Ensure baseDamage is correctly set for each character
+        if (selectedCharacter === 'cultivator') {
+            baseDamage = cultivatorForm === 'melee' ? characterData.cultivator.attackMelee : characterData.cultivator.attackRanged;
+        } else if (selectedCharacter === 'knight') {
+            baseDamage = characterData.knight.attack;
+        } else if (selectedCharacter === 'soldier') {
+            baseDamage = characterData.soldier.attack;
+        } else {
+            baseDamage = 0; // Fallback in case of invalid character
+        }
+    } else {
+        baseDamage = attacker.attack || 0;
+    }
+
     let damageMultiplier = 1.0;
 
     const effectTargetId = isPlayerAttack ? 'playerEffects' : `bossEffects${enemies.indexOf(attacker) % 2 + 1}`;
     const damageIncrease = activeEffects.some(e => e.effectName === 'tăng thương' && e.img.parentElement.id === effectTargetId && e.remainingTime > 0);
     if (damageIncrease) {
-        damageMultiplier += (selectedCharacter === 'knight' ? 0.30 : selectedCharacter === 'soldier' ? 0.50 : 0);
+        damageMultiplier += (selectedCharacter === 'knight' ? 0.30 : selectedCharacter === 'soldier' ? 0.50 : selectedCharacter === 'cultivator' ? 0.30 : 0);
     }
 
-    return Math.floor(baseDamage * damageMultiplier);
+    const finalDamage = Math.floor(baseDamage * damageMultiplier);
+    if (isNaN(finalDamage) || finalDamage < 0) {
+        console.error(`Invalid damage calculated: ${finalDamage}, baseDamage: ${baseDamage}, multiplier: ${damageMultiplier}`);
+        return 0;
+    }
+    return finalDamage;
 }
 
 function showDamageText(x, y, damage) {
@@ -943,65 +1060,75 @@ function showDamageText(x, y, damage) {
 }
 
 function startEnemyAttack(enemy) {
-    enemy.lastAttackTime = Date.now();
+    enemy.lastAttackTime = gameTime;
 }
 
 function startBossSkillLoop(enemy, index) {
     enemy.skillCooldowns?.forEach((cooldown, i) => {
         const skillData = bossSkills[enemy.type][i];
-        enemy.skillCooldowns[i] = 0;
-        setTimeout(() => {
-            if (!isPaused && enemy.health > 0) {
-                if (debuffEffects.includes(skillData.effect)) {
-                    addEffect('playerEffects', skillData.effect);
-                } else {
-                    addEffect(`bossEffects${index % 2 + 1}`, skillData.effect);
-                }
-            }
-            enemy.skillCooldowns[i] = skillData.cooldown;
-        }, skillData.cooldown * 1000);
+        enemy.skillCooldowns[i] = skillData.cooldown;
     });
 }
 
 function setupGameLoop() {
     const gameLoop = () => {
-        if (isPaused) {
-            requestAnimationFrame(gameLoop);
-            return;
-        }
-
         const now = Date.now();
         if (now - lastUpdateTime < 16) {
             requestAnimationFrame(gameLoop);
             return;
         }
+
+        const deltaTime = (now - lastUpdateTime) / 1000; // Time elapsed in seconds since last frame
+        if (!isPaused) {
+            gameTime += deltaTime; // Increment game time only when not paused
+
+            // Update cooldowns based on deltaTime
+            skillCooldowns.forEach((cooldown, i) => {
+                if (cooldown > 0) {
+                    skillCooldowns[i] = Math.max(0, cooldown - deltaTime); // Ensure smooth countdown
+                }
+            });
+
+            enemies.forEach(enemy => {
+                if (enemy.skillCooldowns) {
+                    enemy.skillCooldowns.forEach((cooldown, i) => {
+                        if (cooldown > 0) {
+                            enemy.skillCooldowns[i] = Math.max(0, cooldown - deltaTime); // Ensure smooth countdown
+                        }
+                    });
+                }
+            });
+
+            movePlayer();
+            updateGameState();
+            updateEffectsAndCooldowns();
+        }
+
         lastUpdateTime = now;
-
-        updateGameState();
-        updateEffectsAndCooldowns();
-
         requestAnimationFrame(gameLoop);
     };
+    lastUpdateTime = Date.now();
     requestAnimationFrame(gameLoop);
 }
 
 function updateEnemyHealth(enemy) {
     if (!enemy.element) return;
     const healthElement = enemy.element.querySelector('.health');
-    if (!healthElement) return;
-    const healthPercent = (enemy.health / enemy.maxHealth) * 100;
-    healthElement.style.width = `${healthPercent}%`;
-    if (enemy.type !== 'regularMonster') {
-        const bossIndex = enemies.indexOf(enemy) % 2;
-        updateBossHealth(bossIndex, enemy.health, enemy.maxHealth);
+    if (healthElement) { // For regular monsters
+        const healthPercent = (enemy.health / enemy.maxHealth) * 100;
+        healthElement.style.width = `${healthPercent}%`;
+    }
+    if (enemy.type !== 'regularMonster' && enemy.uiIndex !== undefined) {
+        updateBossHealth(enemy.uiIndex, enemy.health, enemy.maxHealth);
     }
 }
 
 function attackEnemies() {
-    const attackFrameInterval = Math.round(1000 / characterData[selectedCharacter].attackSpeed);
-    const now = Date.now();
-    if (now - (window.lastAttackTime || 0) < attackFrameInterval) return;
-    window.lastAttackTime = now;
+    // Ensure attack speed is correctly applied for each character
+    const character = characterData[selectedCharacter];
+    const attackFrameInterval = character && character.attackSpeed ? (1 / character.attackSpeed) : 1;
+    if (gameTime - (window.lastAttackTime || 0) < attackFrameInterval) return;
+    window.lastAttackTime = gameTime;
 
     enemies.forEach(enemy => {
         if (!enemy.element || !enemy.element.parentElement) return;
@@ -1009,22 +1136,36 @@ function attackEnemies() {
         const enemyX = rect.left + enemy.size / 2;
         const enemyY = rect.top + enemy.size / 2;
         const distToPlayer = Math.hypot(playerX - enemyX, playerY - enemyY);
-        let attackRange = (selectedCharacter === 'soldier' || (selectedCharacter === 'cultivator' && cultivatorForm === 'ranged')) ? 100 : 50;
+
+        // Set attack range based on character type
+        let attackRange;
+        if (selectedCharacter === 'knight') {
+            attackRange = 70; // Melee range for Knight
+        } else if (selectedCharacter === 'soldier') {
+            attackRange = 100; // Ranged attack for Soldier
+        } else if (selectedCharacter === 'cultivator') {
+            attackRange = cultivatorForm === 'melee' ? 70 : 100; // Melee or ranged for Cultivator
+        } else {
+            attackRange = 70; // Default range
+        }
+
         if (distToPlayer <= attackRange) {
             const damage = calculateDamage(null, enemy, true);
-            enemy.health = Math.max(0, enemy.health - damage);
-            showDamageText(enemyX, enemyY - enemy.size / 2, damage);
-            updateEnemyHealth(enemy);
-            if (enemy.health <= 0) {
-                enemy.element.remove();
-                enemies = enemies.filter(e => e.health > 0);
-                if (enemies.length === 0) {
-                    currentTurn++;
-                    if (currentTurn <= 4) {
-                        spawnEnemies();
-                    } else {
-                        alert('Bạn đã hoàn thành game!');
-                        returnToMainMenu();
+            if (damage > 0) { // Ensure damage is applied
+                enemy.health = Math.max(0, enemy.health - damage);
+                showDamageText(enemyX, enemyY - enemy.size / 2, damage);
+                updateEnemyHealth(enemy);
+                if (enemy.health <= 0) {
+                    enemy.element.remove();
+                    enemies = enemies.filter(e => e.health > 0);
+                    if (enemies.length === 0) {
+                        currentTurn++;
+                        if (currentTurn <= 4) {
+                            spawnEnemies();
+                        } else {
+                            alert('Bạn đã hoàn thành game!');
+                            returnToMainMenu();
+                        }
                     }
                 }
             }
@@ -1034,7 +1175,6 @@ function attackEnemies() {
 
 function updateGameState() {
     if (isPaused) return;
-    const now = Date.now();
 
     enemies.forEach(enemy => {
         if (!enemy.element || !enemy.element.parentElement) return;
@@ -1043,8 +1183,7 @@ function updateGameState() {
         const enemyY = rect.top + enemy.size / 2;
         const distToPlayer = Math.hypot(playerX - enemyX, playerY - enemyY);
 
-        // Move bosses toward the player
-        if (enemy.type !== 'regularMonster' && distToPlayer > 50) {
+        if (distToPlayer > 50) {
             const dx = playerX - enemyX;
             const dy = playerY - enemyY;
             const speed = 2;
@@ -1056,13 +1195,21 @@ function updateGameState() {
             enemy.element.style.top = `${enemy.y - enemy.size / 2}px`;
         }
 
-        const attackIntervalMs = (1 / enemy.attackSpeed) * 1000;
-        if (now - enemy.lastAttackTime >= attackIntervalMs && distToPlayer < (enemy.type === 'regularMonster' ? 100 : 150)) {
-            enemy.lastAttackTime = now;
-            const damage = calculateDamage(enemy, null, false);
-            currentHealth = Math.max(0, currentHealth - damage);
-            showDamageText(playerX, playerY - playerSize / 2, damage);
-            updateHealthBar();
+        const attackInterval = 1 / enemy.attackSpeed;
+        if (gameTime - enemy.lastAttackTime >= attackInterval) {
+            enemy.lastAttackTime = gameTime;
+            let enemyAttackRange = 30; // Default for regular monsters
+            if (enemy.type !== 'regularMonster' && !superBossTypes.includes(enemy.type)) {
+                enemyAttackRange = 40; // For regular bosses
+            } else if (superBossTypes.includes(enemy.type)) {
+                enemyAttackRange = 50; // For super bosses
+            }
+            if (distToPlayer < enemyAttackRange) {
+                const damage = calculateDamage(enemy, null, false);
+                currentHealth = Math.max(0, currentHealth - damage);
+                showDamageText(playerX, playerY - playerSize / 2, damage);
+                updateHealthBar();
+            }
         }
     });
 }
@@ -1080,7 +1227,6 @@ function createParticles() {
     }
 }
 
-// Initialize DOM cache immediately
 initDomCache();
 
 document.addEventListener('DOMContentLoaded', () => {
