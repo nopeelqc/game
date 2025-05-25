@@ -149,9 +149,9 @@ const characterData = {
     maBoss: { avatar: "bossma.png", health: 4000 },
     giangHoMangBoss: { avatar: "bossgianghomang.png", health: 4000 },
     khongLoBoss: { avatar: "bosskhonglo.png", health: 4000 },
-    thienDaoBoss: { avatar: "bossthiendao.png", health: 5000 },
-    coGiBoss: { avatar: "bosscogi.png", health: 5000 },
-    thienThanSaNgaBoss: { avatar: "bossthienthansanga.png", health: 6000 }
+    thienDaoBoss: { avatar: "thiendao.png", health: 5000 },
+    coGiBoss: { avatar: "cogi.png", health: 5000 },
+    thienThanSaNgaBoss: { avatar: "thienthansanga.png", health: 6000 }
 };
 
 const regularBossTypes = ['fireBoss', 'iceBoss', 'tienBoss', 'maBoss', 'giangHoMangBoss', 'khongLoBoss'];
@@ -573,8 +573,8 @@ function spawnEnemies() {
     if (currentTurn === 1) {
         for (let i = 0; i < 20; i++) {
             enemies.push({
-                x: Math.random() * (canvasWidth - 70),
-                y: Math.random() * (canvasHeight - 70),
+                x: Math.random() * (canvasWidth - 50),
+                y: Math.random() * (canvasHeight - 50),
                 health: 200,
                 size: 50,
                 image: null,
@@ -585,8 +585,8 @@ function spawnEnemies() {
     } else if (currentTurn === 2) {
         for (let i = 0; i < 25; i++) {
             enemies.push({
-                x: Math.random() * (canvasWidth - 70),
-                y: Math.random() * (canvasHeight - 70),
+                x: Math.random() * (canvasWidth - 50),
+                y: Math.random() * (canvasHeight - 50),
                 health: 200,
                 size: 50,
                 image: null,
@@ -605,14 +605,12 @@ function spawnEnemies() {
                 type: randomBoss,
                 name: String(randomBoss).replace('Boss', 'Boss ')
             });
-            const index = regularBossTypes.indexOf(randomBoss);
-            if (index > -1) regularBossTypes.splice(index, 1);
         }
     } else if (currentTurn === 3) {
         for (let i = 0; i < 25; i++) {
             enemies.push({
-                x: Math.random() * (canvasWidth - 70),
-                y: Math.random() * (canvasHeight - 70),
+                x: Math.random() * (canvasWidth - 50),
+                y: Math.random() * (canvasHeight - 50),
                 health: 200,
                 size: 50,
                 image: null,
@@ -620,33 +618,34 @@ function spawnEnemies() {
                 name: 'Quái Thường'
             });
         }
-        const boss1 = regularBossTypes[Math.floor(Math.random() * regularBossTypes.length)];
-        if (boss1) {
-            const index1 = regularBossTypes.indexOf(boss1);
-            if (index1 > -1) regularBossTypes.splice(index1, 1);
-            const boss2 = regularBossTypes[Math.floor(Math.random() * regularBossTypes.length)];
-            if (boss2) {
-                const index2 = regularBossTypes.indexOf(boss2);
-                if (index2 > -1) regularBossTypes.splice(index2, 1);
-                enemies.push({
-                    x: Math.random() * (canvasWidth - 70),
-                    y: Math.random() * (canvasHeight - 70),
-                    health: characterData[boss1].health,
-                    size: 70,
-                    image: null,
-                    type: boss1,
-                    name: String(boss1).replace('Boss', 'Boss ')
-                });
-                enemies.push({
-                    x: Math.random() * (canvasWidth - 70),
-                    y: Math.random() * (canvasHeight - 70),
-                    health: characterData[boss2].health,
-                    size: 70,
-                    image: null,
-                    type: boss2,
-                    name: String(boss2).replace('Boss', 'Boss ')
-                });
-            }
+        let availableBosses = [...regularBossTypes];
+        const usedBoss = enemies.find(e => e.type !== 'regularMonster')?.type;
+        if (usedBoss) {
+            const usedIndex = availableBosses.indexOf(usedBoss);
+            if (usedIndex > -1) availableBosses.splice(usedIndex, 1);
+        }
+        const boss1 = availableBosses[Math.floor(Math.random() * availableBosses.length)];
+        availableBosses = availableBosses.filter(b => b !== boss1);
+        const boss2 = availableBosses[Math.floor(Math.random() * availableBosses.length)];
+        if (boss1 && boss2) {
+            enemies.push({
+                x: Math.random() * (canvasWidth - 70),
+                y: Math.random() * (canvasHeight - 70),
+                health: characterData[boss1].health,
+                size: 70,
+                image: null,
+                type: boss1,
+                name: String(boss1).replace('Boss', 'Boss ')
+            });
+            enemies.push({
+                x: Math.random() * (canvasWidth - 70),
+                y: Math.random() * (canvasHeight - 70),
+                health: characterData[boss2].health,
+                size: 70,
+                image: null,
+                type: boss2,
+                name: String(boss2).replace('Boss', 'Boss ')
+            });
         }
     } else if (currentTurn === 4) {
         const superBoss = superBossTypes[Math.floor(Math.random() * superBossTypes.length)];
@@ -724,6 +723,7 @@ function sketch(p) {
         p.imageMode(p.CENTER);
         if (playerImage && playerImage.width > 0) { // Added check for valid image
             p.tint(255, 255, 255);
+            p.ellipse(playerX, playerY, playerSize, playerSize); // Circular avatar
             p.image(playerImage, playerX, playerY, playerSize, playerSize);
         } else {
             p.fill(255, 0, 0);
@@ -734,6 +734,7 @@ function sketch(p) {
             if (enemy.health > 0) {
                 if (enemy.image && enemy.image.width > 0) { // Added check for valid image
                     p.tint(255, 0, 0, enemy.type === 'regularMonster' ? 0 : 150);
+                    p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size); // Circular avatar
                     p.image(enemy.image, enemy.x, enemy.y, enemy.size, enemy.size);
                 } else {
                     p.fill(enemy.type === 'regularMonster' ? [0, 255, 0] : [255, 0, 0]); // Corrected fill syntax
