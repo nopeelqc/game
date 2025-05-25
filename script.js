@@ -16,6 +16,7 @@ let isPaused = false;
 let activeEffects = [];
 let currentTurn = 1;
 let p5Instance; // Store p5 instance
+let damageTexts = []; // Array to store damage text objects
 
 const effectImages = {
     'giảm thương': 'giamthuong.png',
@@ -102,11 +103,11 @@ const characterData = {
     knight: {
         name: "Kỵ Sĩ",
         type: "Phong cách Châu Âu",
-        stats: { "Máu:": "1200 HP", "Sát thương:": "80", "Tốc đánh:": "1.2 đòn/s", "DPS:": "96", "Loại:": "Tanker, Cận chiến" },
+        stats: { "Máu:": "1200 HP", "Sát thương:": "95", "Tốc đánh:": "1.2 đòn/s", "DPS:": "96", "Loại:": "Tanker, Cận chiến" },
         story: "Công chúa bị quỷ bắt, vương quốc giao nhiệm vụ",
         ending: "Cầu hôn tại lễ hội ánh sáng",
         maxHealth: 1200,
-        attack: 80,
+        attack: 95,
         attackSpeed: 1.2,
         skills: [
             { name: "Thánh Khiên", desc: "Giảm 50% sát thương nhận vào trong 3 giây", cooldown: 10, effect: 'giảm thương', image: "skill1.png", duration: 3 },
@@ -130,10 +131,10 @@ const characterData = {
         skills: [
             { name: "Thức Tỉnh Linh Thể", desc: "Chuyển đổi giữa cận ↔ xa (0.5s delay)", cooldown: 20, effect: '', image: "skill5.png", duration: 0 },
             { name: "Kiếm Vũ Linh Hồn", desc: "Tăng 30% sát thương cận trong 5s", cooldown: 10, effect: 'tăng thương', image: "skill6.png", duration: 5 },
-            { name: "Kiếm Hút Hồn", desc: "Hồi 10% máu theo damage gây ra (5s hiệu lực)", cooldown: 12, effect: 'hồi máu', image: "skill7.png", duration: 5 },
-            { name: "Linh Kiếm Trảm", desc: "Gây 150 sát thương cận, làm choáng 1s", cooldown: 15, effect: 'choáng', image: "skill8.png", duration: 1 },
-            { name: "Hư Không Tốc Bộ", desc: "Tăng tốc chạy 50% trong 3s", cooldown: 10, effect: 'tăng tốc chạy', image: "skill9.png", duration: 3 },
             { name: "Lôi Kiếm Trận", desc: "Triệu hồi kiếm trận gây 50 sát thương/s trong 4s", cooldown: 14, effect: '', image: "skill10.png", duration: 0 },
+            { name: "Kiếm Hút Hồn", desc: "Hồi 10% máu theo damage gây ra (5s hiệu lực)", cooldown: 12, effect: 'hồi máu', image: "skill7.png", duration: 5 },
+            { name: "Hư Không Tốc Bộ", desc: "Tăng tốc chạy 50% trong 3s", cooldown: 10, effect: 'tăng tốc chạy', image: "skill9.png", duration: 3 },
+            { name: "Linh Kiếm Trảm", desc: "Gây 150 sát thương cận, làm choáng 1s", cooldown: 15, effect: 'choáng', image: "skill8.png", duration: 1 },
             { name: "Tốc Kiếm Pháp", desc: "Tăng tốc đánh 40% trong 5s", cooldown: 10, effect: 'tăng tốc đánh', image: "skill11.png", duration: 5 }
         ],
         avatar: "imagethanhtutachnen.png"
@@ -155,7 +156,7 @@ const characterData = {
         ],
         avatar: "imagebinhchungtachnen.png"
     },
-    regularMonster: { avatar: "quaithuong.png", attack: 0, attackSpeed: 1 },
+    regularMonster: { avatar: "quaithuong.png", attack: 45, attackSpeed: 1 }, // Average of 30-60
     fireBoss: { avatar: "bosslua.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
     iceBoss: { avatar: "bossbang.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
     tienBoss: { avatar: "bosstien.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8 },
@@ -322,12 +323,11 @@ function startGame() {
 }
 
 function updateHealthBar() {
-    // Ensure health percentage is calculated correctly and can go to 0
     health = Math.max(0, (currentHealth / maxHealth) * 100);
     const healthElement = document.getElementById('health');
     healthElement.style.width = `${health}%`;
-    healthElement.setAttribute('title', `${Math.round(currentHealth)} / ${maxHealth}`); // Show HP values on hover
-    console.log(`Player HP: ${Math.round(currentHealth)} / ${maxHealth}`); // Debugging log
+    healthElement.setAttribute('title', `${Math.round(currentHealth)} / ${maxHealth}`);
+    console.log(`Player HP: ${Math.round(currentHealth)} / ${maxHealth}`);
     if (currentHealth <= 0) {
         alert('Bạn đã thua! Trò chơi kết thúc.');
         returnToMainMenu();
@@ -338,7 +338,7 @@ function updateBossHealth(index, currentHealth, maxHealth) {
     const healthPercent = (currentHealth / maxHealth) * 100;
     const healthElement = document.getElementById(`bossHealth${index + 1}`);
     healthElement.style.width = `${healthPercent}%`;
-    healthElement.setAttribute('title', `${Math.round(currentHealth)} / ${maxHealth}`); // Show HP values on hover
+    healthElement.setAttribute('title', `${Math.round(currentHealth)} / ${maxHealth}`);
 }
 
 function getEffectDuration(effectName) {
@@ -482,7 +482,7 @@ function useSkill(skillIndex) {
     if (selectedCharacter === 'cultivator' && skillIndex === 1) {
         cultivatorForm = cultivatorForm === 'melee' ? 'ranged' : 'melee';
         maxHealth = cultivatorForm === 'melee' ? characterData.cultivator.maxHealthMelee : characterData.cultivator.maxHealthRanged;
-        currentHealth = Math.min(currentHealth, maxHealth); // Adjust current HP if max changes
+        currentHealth = Math.min(currentHealth, maxHealth);
         updateHealthBar();
 
         const character = characterData['cultivator'];
@@ -582,6 +582,7 @@ function returnToMainMenu() {
     cooldownIntervals = [null, null, null, null];
     enemies = [];
     currentTurn = 1;
+    damageTexts = [];
     
     for (let i = 1; i <= 4; i++) {
         const skillBtn = document.getElementById(`skill${i}`);
@@ -625,8 +626,8 @@ function spawnEnemies() {
 
     if (currentTurn === 1) {
         for (let i = 0; i < 20; i++) {
-            const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100; // 100-300 HP
-            const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30; // 30-60 damage
+            const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
+            const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
             enemies.push({
                 x: Math.random() * (canvasWidth - 50),
                 y: Math.random() * (canvasHeight - 50),
@@ -755,20 +756,49 @@ function spawnEnemies() {
     }
 }
 
+function calculateDamage(attacker, target, isPlayerAttack) {
+    let baseDamage = isPlayerAttack ? (selectedCharacter === 'cultivator' ? (cultivatorForm === 'melee' ? characterData.cultivator.attackMelee : characterData.cultivator.attackRanged) : characterData[selectedCharacter].attack) : attacker.attack;
+    let damageMultiplier = 1.0;
+
+    // Apply damage increase effects
+    const activeDamageEffects = activeEffects.filter(e => e.effectName === 'tăng thương' && e.img.parentElement.id === (isPlayerAttack ? 'playerEffects' : `bossEffects${enemies.indexOf(attacker) % 2 + 1}`));
+    activeDamageEffects.forEach(effect => {
+        if (effect.effectName === 'tăng thương') {
+            damageMultiplier += (selectedCharacter === 'knight' && effect.effectName === 'tăng thương') ? 0.30 : // 30% from Chém Nghiền Nát
+                               (selectedCharacter === 'soldier' && effect.effectName === 'tăng thương') ? 0.50 : // 50% from Nội Tại Tập Kích
+                               0; // Default no increase for other characters
+        }
+    });
+
+    const finalDamage = Math.floor(baseDamage * damageMultiplier);
+    return finalDamage;
+}
+
+function showDamageText(x, y, damage) {
+    damageTexts.push({
+        x: x,
+        y: y,
+        damage: damage,
+        opacity: 255,
+        life: 30 // Frames to display (approx 0.5s at 60 FPS)
+    });
+}
+
 function startEnemyAttack(enemy) {
     if (enemy.attackInterval) clearInterval(enemy.attackInterval);
-    const attackIntervalMs = (1 / enemy.attackSpeed) * 1000; // Convert attacks/s to interval in ms
+    const attackIntervalMs = (1 / enemy.attackSpeed) * 1000;
     enemy.attackInterval = setInterval(() => {
         if (isPaused || enemy.health <= 0 || currentHealth <= 0) return;
-        const attackRange = enemy.type === 'regularMonster' ? 100 : 150; // Increased range
+        const attackRange = enemy.type === 'regularMonster' ? 100 : 150;
         if (!playerX || !playerY) {
             console.warn("Player position not defined!");
             return;
         }
         const distToPlayer = p5Instance.dist(playerX, playerY, enemy.x, enemy.y);
         if (distToPlayer < attackRange) {
-            const damage = enemy.attack;
-            currentHealth = Math.max(0, currentHealth - damage); // Ensure health doesn't go below 0
+            const damage = calculateDamage(enemy, null, false);
+            currentHealth = Math.max(0, currentHealth - damage);
+            showDamageText(playerX, playerY - playerSize / 2 - 10, damage);
             console.log(`${enemy.name} attacked player for ${damage} damage! Player HP: ${currentHealth}/${maxHealth}`);
             updateHealthBar();
         } else {
@@ -778,7 +808,7 @@ function startEnemyAttack(enemy) {
 }
 
 function sketch(p) {
-    p5Instance = p; // Store the p5 instance
+    p5Instance = p;
 
     p.preload = function() {
         playerImage = p.loadImage(characterData[selectedCharacter].avatar,
@@ -840,7 +870,7 @@ function sketch(p) {
         p.imageMode(p.CENTER);
         if (playerImage && playerImage.width > 0) {
             p.tint(255, 255, 255);
-            p.ellipse(playerX, playerY, playerSize, playerSize); // Circular avatar
+            p.ellipse(playerX, playerY, playerSize, playerSize);
             p.image(playerImage, playerX, playerY, playerSize, playerSize);
         } else {
             p.fill(255, 0, 0);
@@ -851,25 +881,24 @@ function sketch(p) {
             if (enemy.health > 0) {
                 if (enemy.image && enemy.image.width > 0) {
                     p.tint(255, 0, 0, enemy.type === 'regularMonster' ? 0 : 150);
-                    p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size); // Circular avatar
+                    p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size);
                     p.image(enemy.image, enemy.x, enemy.y, enemy.size, enemy.size);
                 } else {
                     p.fill(enemy.type === 'regularMonster' ? [0, 255, 0] : [255, 0, 0]);
                     p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size);
                 }
 
-                // Draw and update health bar for regular monsters
+                // Draw health bar
                 if (enemy.type === 'regularMonster') {
                     const healthBarWidth = 30;
                     const healthBarHeight = 5;
-                    const healthPercent = Math.max(0, enemy.health / enemy.maxHealth); // Ensure healthPercent doesn't go below 0
-                    p.fill(255, 0, 0); // Background of health bar
+                    const healthPercent = Math.max(0, enemy.health / enemy.maxHealth);
+                    p.fill(255, 0, 0);
                     p.rect(enemy.x - healthBarWidth / 2, enemy.y - enemy.size / 2 - 10, healthBarWidth, healthBarHeight);
-                    p.fill(0, 255, 0); // Health bar
+                    p.fill(0, 255, 0);
                     p.rect(enemy.x - healthBarWidth / 2, enemy.y - enemy.size / 2 - 10, healthBarWidth * healthPercent, healthBarHeight);
                 }
 
-                // Ensure playerX and playerY are defined
                 if (!playerX || !playerY) return;
 
                 let dx = playerX - enemy.x;
@@ -888,9 +917,10 @@ function sketch(p) {
                     let distToEnemy = p.dist(playerX, playerY, enemy.x, enemy.y);
                     let attackRange = (selectedCharacter === 'soldier' || (selectedCharacter === 'cultivator' && cultivatorForm === 'ranged')) ? 100 : 50;
                     if (distToEnemy <= attackRange) {
-                        const attackDamage = selectedCharacter === 'cultivator' ? (cultivatorForm === 'melee' ? characterData.cultivator.attackMelee : characterData.cultivator.attackRanged) : characterData[selectedCharacter].attack;
-                        enemy.health = Math.max(0, enemy.health - attackDamage); // Ensure health doesn't go below 0
-                        console.log(`Player attacked ${enemy.name} for ${attackDamage} damage! Enemy HP: ${enemy.health}/${enemy.maxHealth}`);
+                        const damage = calculateDamage(null, enemy, true);
+                        enemy.health = Math.max(0, enemy.health - damage);
+                        showDamageText(enemy.x, enemy.y - enemy.size / 2 - 10, damage);
+                        console.log(`Player attacked ${enemy.name} for ${damage} damage! Enemy HP: ${enemy.health}/${enemy.maxHealth}`);
                         if (enemy.type !== 'regularMonster') {
                             updateBossHealth(index % 2, enemy.health, enemy.maxHealth);
                         }
@@ -898,7 +928,7 @@ function sketch(p) {
                             enemy.health = 0;
                             if (enemy.attackInterval) clearInterval(enemy.attackInterval);
                             console.log(`${enemy.name} đã bị hạ gục!`);
-                            enemies = enemies.filter(e => e.health > 0); // Remove defeated enemies
+                            enemies = enemies.filter(e => e.health > 0);
                             if (enemies.length === 0) {
                                 currentTurn++;
                                 if (currentTurn <= 4) {
@@ -915,7 +945,6 @@ function sketch(p) {
                     }
                 }
 
-                // Show UI only when a boss is present
                 if (enemy.type !== 'regularMonster') {
                     const bossIndex = index % 2;
                     document.getElementById(`bossName${bossIndex + 1}`).textContent = enemy.name;
@@ -925,6 +954,20 @@ function sketch(p) {
                 }
             }
         });
+
+        // Draw damage text
+        for (let i = damageTexts.length - 1; i >= 0; i--) {
+            let text = damageTexts[i];
+            p.fill(255, 0, 0, text.opacity); // Red color with fading opacity
+            p.textSize(16);
+            p.text(`-${text.damage}`, text.x, text.y);
+            text.y -= 1; // Move upward
+            text.opacity -= 255 / text.life; // Fade out
+            text.life--;
+            if (text.life <= 0) {
+                damageTexts.splice(i, 1);
+            }
+        }
 
         if (p.keyIsDown(85)) useSkill(1);
         if (p.keyIsDown(73)) useSkill(2);
