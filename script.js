@@ -322,7 +322,8 @@ function startGame() {
 }
 
 function updateHealthBar() {
-    health = (currentHealth / maxHealth) * 100;
+    // Ensure health percentage is calculated correctly and can go to 0
+    health = Math.max(0, (currentHealth / maxHealth) * 100);
     const healthElement = document.getElementById('health');
     healthElement.style.width = `${health}%`;
     healthElement.setAttribute('title', `${Math.round(currentHealth)} / ${maxHealth}`); // Show HP values on hover
@@ -758,8 +759,7 @@ function startEnemyAttack(enemy) {
     if (enemy.attackInterval) clearInterval(enemy.attackInterval);
     const attackIntervalMs = (1 / enemy.attackSpeed) * 1000; // Convert attacks/s to interval in ms
     enemy.attackInterval = setInterval(() => {
-        if (isPaused || enemy.health <= 0) return;
-        // Increase attack range to make it easier for enemies to hit the player
+        if (isPaused || enemy.health <= 0 || currentHealth <= 0) return;
         const attackRange = enemy.type === 'regularMonster' ? 100 : 150; // Increased range
         if (!playerX || !playerY) {
             console.warn("Player position not defined!");
@@ -767,9 +767,8 @@ function startEnemyAttack(enemy) {
         }
         const distToPlayer = p5Instance.dist(playerX, playerY, enemy.x, enemy.y);
         if (distToPlayer < attackRange) {
-            // Ensure damage is applied
             const damage = enemy.attack;
-            currentHealth -= damage;
+            currentHealth = Math.max(0, currentHealth - damage); // Ensure health doesn't go below 0
             console.log(`${enemy.name} attacked player for ${damage} damage! Player HP: ${currentHealth}/${maxHealth}`);
             updateHealthBar();
         } else {
@@ -839,7 +838,7 @@ function sketch(p) {
         handlePlayerMovement(p);
 
         p.imageMode(p.CENTER);
-        if (playerImage && playerImage.width > 0) { // Added check for valid image
+        if (playerImage && playerImage.width > 0) {
             p.tint(255, 255, 255);
             p.ellipse(playerX, playerY, playerSize, playerSize); // Circular avatar
             p.image(playerImage, playerX, playerY, playerSize, playerSize);
@@ -850,20 +849,20 @@ function sketch(p) {
 
         enemies.forEach((enemy, index) => {
             if (enemy.health > 0) {
-                if (enemy.image && enemy.image.width > 0) { // Added check for valid image
+                if (enemy.image && enemy.image.width > 0) {
                     p.tint(255, 0, 0, enemy.type === 'regularMonster' ? 0 : 150);
                     p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size); // Circular avatar
                     p.image(enemy.image, enemy.x, enemy.y, enemy.size, enemy.size);
                 } else {
-                    p.fill(enemy.type === 'regularMonster' ? [0, 255, 0] : [255, 0, 0]); // Corrected fill syntax
+                    p.fill(enemy.type === 'regularMonster' ? [0, 255, 0] : [255, 0, 0]);
                     p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size);
                 }
 
-                // Draw health bar for regular monsters
+                // Draw and update health bar for regular monsters
                 if (enemy.type === 'regularMonster') {
                     const healthBarWidth = 30;
                     const healthBarHeight = 5;
-                    const healthPercent = enemy.health / enemy.maxHealth;
+                    const healthPercent = Math.max(0, enemy.health / enemy.maxHealth); // Ensure healthPercent doesn't go below 0
                     p.fill(255, 0, 0); // Background of health bar
                     p.rect(enemy.x - healthBarWidth / 2, enemy.y - enemy.size / 2 - 10, healthBarWidth, healthBarHeight);
                     p.fill(0, 255, 0); // Health bar
@@ -881,15 +880,17 @@ function sketch(p) {
                     enemy.y += (dy / distance) * 2;
                 }
 
-                enemy.x = p.constrain(enemy.x, enemy.size / 2, p.width - playerSize / 2);
-                enemy.y = p.constrain(enemy.y, enemy.size / 2, p.height - playerSize / 2);
+                enemy.x = p.constrain(enemy.x, enemy.size / 2, p.width - enemy.size / 2);
+                enemy.y = p.constrain(enemy.y, enemy.size / 2, p.height - enemy.size / 2);
 
-                if (p.keyIsDown(74) && p.frameCount % (60 / characterData[selectedCharacter].attackSpeed) === 0) {
+                // Player attack logic
+                if (p.keyIsDown(74) && p.frameCount % Math.round(60 / characterData[selectedCharacter].attackSpeed) === 0) {
                     let distToEnemy = p.dist(playerX, playerY, enemy.x, enemy.y);
                     let attackRange = (selectedCharacter === 'soldier' || (selectedCharacter === 'cultivator' && cultivatorForm === 'ranged')) ? 100 : 50;
-                    if (distToEnemy < attackRange) {
+                    if (distToEnemy <= attackRange) {
                         const attackDamage = selectedCharacter === 'cultivator' ? (cultivatorForm === 'melee' ? characterData.cultivator.attackMelee : characterData.cultivator.attackRanged) : characterData[selectedCharacter].attack;
-                        enemy.health -= attackDamage;
+                        enemy.health = Math.max(0, enemy.health - attackDamage); // Ensure health doesn't go below 0
+                        console.log(`Player attacked ${enemy.name} for ${attackDamage} damage! Enemy HP: ${enemy.health}/${enemy.maxHealth}`);
                         if (enemy.type !== 'regularMonster') {
                             updateBossHealth(index % 2, enemy.health, enemy.maxHealth);
                         }
@@ -897,7 +898,8 @@ function sketch(p) {
                             enemy.health = 0;
                             if (enemy.attackInterval) clearInterval(enemy.attackInterval);
                             console.log(`${enemy.name} đã bị hạ gục!`);
-                            if (enemies.every(e => e.health <= 0)) {
+                            enemies = enemies.filter(e => e.health > 0); // Remove defeated enemies
+                            if (enemies.length === 0) {
                                 currentTurn++;
                                 if (currentTurn <= 4) {
                                     spawnEnemies();
@@ -908,6 +910,8 @@ function sketch(p) {
                                 }
                             }
                         }
+                    } else {
+                        console.log(`Player attack missed ${enemy.name}. Distance: ${distToEnemy}, Range: ${attackRange}`);
                     }
                 }
 
