@@ -612,8 +612,9 @@ function spawnEnemies() {
         domCache.enemyContainer.innerHTML = ''; // Clear existing enemies
     }
 
+    // Standardize enemy spawning across all turns to mimic the "bright area" behavior
     if (currentTurn === 1) {
-        // Limit to 3 regular monsters as per the bright area setup
+        // Bright area behavior: 3 regular monsters
         for (let i = 0; i < 3; i++) {
             const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
             const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
@@ -638,7 +639,8 @@ function spawnEnemies() {
             enemies.push(enemy);
         }
     } else if (currentTurn === 2) {
-        for (let i = 0; i < 12; i++) {
+        // Reduced to 3 regular monsters to maintain stability, plus 1 boss
+        for (let i = 0; i < 3; i++) {
             const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
             const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
             const enemy = {
@@ -684,7 +686,8 @@ function spawnEnemies() {
         createEnemyElement(boss);
         enemies.push(boss);
     } else if (currentTurn === 3) {
-        for (let i = 0; i < 12; i++) {
+        // Reduced to 3 regular monsters to maintain stability, plus 2 bosses
+        for (let i = 0; i < 3; i++) {
             const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
             const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
             const enemy = {
@@ -756,6 +759,7 @@ function spawnEnemies() {
             enemies.push(enemy1, enemy2);
         }
     } else if (currentTurn === 4) {
+        // Final turn: 1 super boss, no regular monsters to maintain stability
         const superBoss = superBossTypes[Math.floor(Math.random() * superBossTypes.length)];
         const boss = {
             x: Math.random() * (canvasWidth - 70),
@@ -895,7 +899,7 @@ function sketch(p) {
         playerX = p.width / 2;
         playerY = p.height / 2;
 
-        // Set the entire background to the brighter color (48, 43, 99)
+        // Keep the bright background color
         backgroundImage = p.createGraphics(p.width, p.height);
         backgroundImage.background(48, 43, 99);
 
@@ -1001,7 +1005,7 @@ function sketch(p) {
     p.windowResized = function() {
         // Resize canvas to full screen on window resize
         p.resizeCanvas(window.innerWidth, window.innerHeight);
-        // Set the entire background to the brighter color (48, 43, 99)
+        // Keep the bright background color
         backgroundImage = p.createGraphics(p.width, p.height);
         backgroundImage.background(48, 43, 99);
         // Update player position to center of new canvas
@@ -1045,6 +1049,7 @@ function updateGameState() {
         const enemyY = rect.top + enemy.size / 2;
         const distToPlayer = Math.hypot(playerX - enemyX, playerY - enemyY);
 
+        // Normalize enemy movement across the entire map
         if (distToPlayer > 50) {
             const dx = playerX - enemyX;
             const dy = playerY - enemyY;
@@ -1058,6 +1063,7 @@ function updateGameState() {
             enemy.element.style.top = `${enemy.y - enemy.size / 2}px`;
         }
 
+        // Standardize attack behavior
         const attackIntervalMs = (1 / enemy.attackSpeed) * 1000;
         if (now - enemy.lastAttackTime >= attackIntervalMs && distToPlayer < (enemy.type === 'regularMonster' ? 100 : 150)) {
             enemy.lastAttackTime = now;
