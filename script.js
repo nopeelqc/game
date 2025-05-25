@@ -216,7 +216,21 @@ function initDomCache() {
     domCache.pauseModal = document.getElementById('pauseModal');
     domCache.skillModal = document.getElementById('skillModal');
     domCache.guideModal = document.getElementById('guideModal');
-    domCache.enemyContainer = document.getElementById('p5-canvas'); // Reuse p5-canvas as enemy container
+    // Create a new container for enemies to avoid conflict with p5-canvas
+    let enemyContainer = document.getElementById('enemy-container');
+    if (!enemyContainer) {
+        enemyContainer = document.createElement('div');
+        enemyContainer.id = 'enemy-container';
+        enemyContainer.style.position = 'absolute';
+        enemyContainer.style.top = '0';
+        enemyContainer.style.left = '0';
+        enemyContainer.style.width = '100%';
+        enemyContainer.style.height = '100%';
+        enemyContainer.style.pointerEvents = 'none'; // Prevent interference with p5 canvas
+        enemyContainer.style.zIndex = '10'; // Ensure enemies appear above canvas
+        document.body.appendChild(enemyContainer);
+    }
+    domCache.enemyContainer = enemyContainer;
 }
 
 function showCharacterSelect() {
@@ -572,14 +586,18 @@ function returnToMainMenu() {
     domCache.bossHealth2.style.width = '0%';
     if (p5Instance) p5Instance.noLoop();
     // Clear enemy elements
-    domCache.enemyContainer.innerHTML = '';
+    if (domCache.enemyContainer) {
+        domCache.enemyContainer.innerHTML = '';
+    }
 }
 
 function spawnEnemies() {
     enemies = [];
     const canvasWidth = window.innerWidth;
     const canvasHeight = window.innerHeight;
-    domCache.enemyContainer.innerHTML = ''; // Clear existing enemies
+    if (domCache.enemyContainer) {
+        domCache.enemyContainer.innerHTML = ''; // Clear existing enemies
+    }
 
     if (currentTurn === 1) {
         for (let i = 0; i < 10; i++) {
@@ -765,7 +783,11 @@ function createEnemyElement(enemy) {
     enemyElement.style.width = `${enemy.size}px`;
     enemyElement.style.height = `${enemy.size}px`;
     enemy.element = enemyElement;
-    domCache.enemyContainer.appendChild(enemyElement);
+    if (domCache.enemyContainer) {
+        domCache.enemyContainer.appendChild(enemyElement);
+    } else {
+        console.warn('Enemy container not found. Cannot append enemy element.');
+    }
 
     if (enemy.type !== 'regularMonster') {
         const nameElement = document.createElement('div');
@@ -842,7 +864,7 @@ function sketch(p) {
         }
 
         // Reduced particle count
-        const existingParticles = document.querySelectorAll('#p5-canvas .map-particle');
+        const existingParticles = document.querySelectorAll('#enemy-container .map-particle');
         existingParticles.forEach(particle => particle.remove());
         for (let i = 0; i < 10; i++) {
             const particle = document.createElement('div');
@@ -850,7 +872,9 @@ function sketch(p) {
             particle.style.left = Math.random() * 100 + '%';
             particle.style.top = Math.random() * 100 + '%';
             particle.style.animationDelay = Math.random() * 6 + 's';
-            domCache.enemyContainer.appendChild(particle);
+            if (domCache.enemyContainer) {
+                domCache.enemyContainer.appendChild(particle);
+            }
         }
 
         enemies.forEach((enemy, index) => {
@@ -886,6 +910,7 @@ function sketch(p) {
 
         if (isAttacking) {
             enemies.forEach(enemy => {
+                if (!enemy.element || !enemy.element.parentElement) return; // Skip if element doesn't exist
                 const rect = enemy.element.getBoundingClientRect();
                 const enemyX = rect.left + enemy.size / 2;
                 const enemyY = rect.top + enemy.size / 2;
@@ -950,7 +975,9 @@ function sketch(p) {
 }
 
 function updateEnemyHealth(enemy) {
+    if (!enemy.element) return; // Skip if element doesn't exist
     const healthElement = enemy.element.querySelector('.health');
+    if (!healthElement) return; // Skip if health element not found
     const healthPercent = (enemy.health / enemy.maxHealth) * 100;
     healthElement.style.width = `${healthPercent}%`;
     if (enemy.type !== 'regularMonster') {
@@ -964,6 +991,7 @@ function updateGameState() {
     const now = Date.now();
 
     enemies.forEach(enemy => {
+        if (!enemy.element || !enemy.element.parentElement) return; // Skip if element doesn't exist
         const rect = enemy.element.getBoundingClientRect();
         const enemyX = rect.left + enemy.size / 2;
         const enemyY = rect.top + enemy.size / 2;
@@ -1012,8 +1040,10 @@ function createParticles() {
     }
 }
 
+// Initialize DOM cache immediately
+initDomCache();
+
 document.addEventListener('DOMContentLoaded', () => {
-    initDomCache();
     document.querySelectorAll('.character-card').forEach(card => {
         card.addEventListener('click', function(event) {
             if (!event.target.classList.contains('char-btn')) {
