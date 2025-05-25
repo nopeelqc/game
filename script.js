@@ -613,7 +613,8 @@ function spawnEnemies() {
     }
 
     if (currentTurn === 1) {
-        for (let i = 0; i < 10; i++) {
+        // Limit to 3 regular monsters as per the bright area setup
+        for (let i = 0; i < 3; i++) {
             const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
             const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
             const enemy = {
@@ -630,6 +631,9 @@ function spawnEnemies() {
                 lastAttackTime: 0,
                 element: null
             };
+            // Constrain enemy position within canvas boundaries
+            enemy.x = Math.max(enemy.size / 2, Math.min(canvasWidth - enemy.size / 2, enemy.x));
+            enemy.y = Math.max(enemy.size / 2, Math.min(canvasHeight - enemy.size / 2, enemy.y));
             createEnemyElement(enemy);
             enemies.push(enemy);
         }
@@ -651,6 +655,9 @@ function spawnEnemies() {
                 lastAttackTime: 0,
                 element: null
             };
+            // Constrain enemy position within canvas boundaries
+            enemy.x = Math.max(enemy.size / 2, Math.min(canvasWidth - enemy.size / 2, enemy.x));
+            enemy.y = Math.max(enemy.size / 2, Math.min(canvasHeight - enemy.size / 2, enemy.y));
             createEnemyElement(enemy);
             enemies.push(enemy);
         }
@@ -671,6 +678,9 @@ function spawnEnemies() {
             nextSkillIndex: 0,
             element: null
         };
+        // Constrain boss position within canvas boundaries
+        boss.x = Math.max(boss.size / 2, Math.min(canvasWidth - boss.size / 2, boss.x));
+        boss.y = Math.max(boss.size / 2, Math.min(canvasHeight - boss.size / 2, boss.y));
         createEnemyElement(boss);
         enemies.push(boss);
     } else if (currentTurn === 3) {
@@ -691,6 +701,9 @@ function spawnEnemies() {
                 lastAttackTime: 0,
                 element: null
             };
+            // Constrain enemy position within canvas boundaries
+            enemy.x = Math.max(enemy.size / 2, Math.min(canvasWidth - enemy.size / 2, enemy.x));
+            enemy.y = Math.max(enemy.size / 2, Math.min(canvasHeight - enemy.size / 2, enemy.y));
             createEnemyElement(enemy);
             enemies.push(enemy);
         }
@@ -733,6 +746,11 @@ function spawnEnemies() {
                 nextSkillIndex: 0,
                 element: null
             };
+            // Constrain boss positions within canvas boundaries
+            enemy1.x = Math.max(enemy1.size / 2, Math.min(canvasWidth - enemy1.size / 2, enemy1.x));
+            enemy1.y = Math.max(enemy1.size / 2, Math.min(canvasHeight - enemy1.size / 2, enemy1.y));
+            enemy2.x = Math.max(enemy2.size / 2, Math.min(canvasWidth - enemy2.size / 2, enemy2.x));
+            enemy2.y = Math.max(enemy2.size / 2, Math.min(canvasHeight - enemy2.size / 2, enemy2.y));
             createEnemyElement(enemy1);
             createEnemyElement(enemy2);
             enemies.push(enemy1, enemy2);
@@ -755,6 +773,9 @@ function spawnEnemies() {
             nextSkillIndex: 0,
             element: null
         };
+        // Constrain boss position within canvas boundaries
+        boss.x = Math.max(boss.size / 2, Math.min(canvasWidth - boss.size / 2, boss.x));
+        boss.y = Math.max(boss.size / 2, Math.min(canvasHeight - boss.size / 2, boss.y));
         createEnemyElement(boss);
         enemies.push(boss);
     }
@@ -874,14 +895,9 @@ function sketch(p) {
         playerX = p.width / 2;
         playerY = p.height / 2;
 
-        // Precompute background gradient for full screen
+        // Set the entire background to the brighter color (48, 43, 99)
         backgroundImage = p.createGraphics(p.width, p.height);
-        for (let y = 0; y < p.height; y++) {
-            let inter = p.map(y, 0, p.height, 0, 1);
-            let c = p.lerpColor(p.color(15, 12, 41), p.color(48, 43, 99), inter);
-            backgroundImage.stroke(c);
-            backgroundImage.line(0, y, p.width, y);
-        }
+        backgroundImage.background(48, 43, 99);
 
         // Reduced particle count
         const existingParticles = document.querySelectorAll('#enemy-container .map-particle');
@@ -919,7 +935,6 @@ function sketch(p) {
         p.imageMode(p.CENTER);
         if (playerImage && playerImage.width > 0) {
             p.tint(255, 255, 255);
-            // Removed p.ellipse to eliminate the white circle
             p.image(playerImage, playerX, playerY, playerSize, playerSize);
         } else {
             p.fill(255, 0, 0);
@@ -986,13 +1001,9 @@ function sketch(p) {
     p.windowResized = function() {
         // Resize canvas to full screen on window resize
         p.resizeCanvas(window.innerWidth, window.innerHeight);
+        // Set the entire background to the brighter color (48, 43, 99)
         backgroundImage = p.createGraphics(p.width, p.height);
-        for (let y = 0; y < p.height; y++) {
-            let inter = p.map(y, 0, p.height, 0, 1);
-            let c = p.lerpColor(p.color(15, 12, 41), p.color(48, 43, 99), inter);
-            backgroundImage.stroke(c);
-            backgroundImage.line(0, y, p.width, y);
-        }
+        backgroundImage.background(48, 43, 99);
         // Update player position to center of new canvas
         playerX = p.width / 2;
         playerY = p.height / 2;
@@ -1000,6 +1011,9 @@ function sketch(p) {
         enemies.forEach(enemy => {
             enemy.x = Math.random() * (p.width - enemy.size);
             enemy.y = Math.random() * (p.height - enemy.size);
+            // Constrain enemy position within new canvas boundaries
+            enemy.x = Math.max(enemy.size / 2, Math.min(p.width - enemy.size / 2, enemy.x));
+            enemy.y = Math.max(enemy.size / 2, Math.min(p.height - enemy.size / 2, enemy.y));
             if (enemy.element) {
                 enemy.element.style.left = `${enemy.x - enemy.size / 2}px`;
                 enemy.element.style.top = `${enemy.y - enemy.size / 2}px`;
