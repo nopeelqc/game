@@ -4,20 +4,23 @@ let maxHealth = 1000; // Actual max HP based on character
 let currentHealth = maxHealth; // Actual current HP
 let skillCooldowns = [0, 0, 0, 0];
 let cooldownDurations = [0, 0, 0, 0];
-let playerImage;
 let enemies = [];
-let playerX, playerY;
-let playerSize = 70;
-let gameCanvas;
 let cultivatorForm = 'melee';
 let cultivatorSkills = [];
 let isPaused = false;
 let activeEffects = [];
 let currentTurn = 1;
-let p5Instance;
 let damageTexts = [];
 let lastUpdateTime = 0;
-let backgroundImage;
+
+// Player DOM element and position
+let playerElement = null;
+let playerX, playerY;
+let playerSize = 70;
+let playerSpeed = 5;
+
+// DOM-based enemy container
+let enemyContainer = null;
 
 // Cache DOM elements to reduce querySelector calls
 const domCache = {
@@ -37,7 +40,7 @@ const domCache = {
     pauseModal: null,
     skillModal: null,
     guideModal: null,
-    enemyContainer: null // New container for enemies
+    enemyContainer: null // Container for enemies
 };
 
 const effectImages = {
@@ -216,7 +219,7 @@ function initDomCache() {
     domCache.pauseModal = document.getElementById('pauseModal');
     domCache.skillModal = document.getElementById('skillModal');
     domCache.guideModal = document.getElementById('guideModal');
-    // Create a new container for enemies to avoid conflict with p5-canvas
+    // Create a new container for enemies
     let enemyContainer = document.getElementById('enemy-container');
     if (!enemyContainer) {
         enemyContainer = document.createElement('div');
@@ -226,24 +229,11 @@ function initDomCache() {
         enemyContainer.style.left = '0';
         enemyContainer.style.width = '100vw';
         enemyContainer.style.height = '100vh';
-        enemyContainer.style.pointerEvents = 'none'; // Prevent interference with p5 canvas
-        enemyContainer.style.zIndex = '10'; // Ensure enemies appear above canvas
+        enemyContainer.style.pointerEvents = 'none'; // Prevent interference with UI
+        enemyContainer.style.zIndex = '10';
         document.body.appendChild(enemyContainer);
     }
     domCache.enemyContainer = enemyContainer;
-
-    // Ensure #p5-canvas is full-screen
-    let p5Canvas = document.getElementById('p5-canvas');
-    if (p5Canvas) {
-        p5Canvas.style.position = 'absolute';
-        p5Canvas.style.top = '0';
-        p5Canvas.style.left = '0';
-        p5Canvas.style.width = '100vw';
-        p5Canvas.style.height = '100vh';
-        p5Canvas.style.margin = '0';
-        p5Canvas.style.padding = '0';
-        p5Canvas.style.zIndex = '5';
-    }
 }
 
 function showCharacterSelect() {
@@ -380,8 +370,77 @@ function startGame() {
 
     cooldownDurations = cultivatorSkills.map(skill => skill.cooldown);
     skillCooldowns = new Array(cultivatorSkills.length).fill(0);
+
+    // Initialize player DOM element
+    playerX = window.innerWidth / 2;
+    playerY = window.innerHeight / 2;
+    playerElement = document.createElement('div');
+    playerElement.className = 'player-character';
+    const playerImg = document.createElement('img');
+    playerImg.src = character.avatar;
+    playerImg.style.width = `${playerSize}px`;
+    playerImg.style.height = `${playerSize}px`;
+    playerImg.style.objectFit = 'contain';
+    playerElement.appendChild(playerImg);
+    playerElement.style.position = 'absolute';
+    playerElement.style.left = `${playerX - playerSize / 2}px`;
+    playerElement.style.top = `${playerY - playerSize / 2}px`;
+    playerElement.style.width = `${playerSize}px`;
+    playerElement.style.height = `${playerSize}px`;
+    playerElement.style.zIndex = '15';
+    domCache.gamePlay.appendChild(playerElement);
+
+    // Set up game loop and event listeners
     spawnEnemies();
-    new p5(sketch);
+    setupGameLoop();
+    setupEventListeners();
+}
+
+function setupEventListeners() {
+    // WASD movement
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+}
+
+function handleKeyDown(event) {
+    if (isPaused) return;
+    const key = event.key.toLowerCase();
+    if (['w', 'a', 's', 'd'].includes(key)) {
+        event.preventDefault(); // Prevent scrolling
+        movePlayer(key);
+    }
+    if (key === 'j') attackEnemies();
+    if (key === 'u') useSkill(1);
+    if (key === 'i') useSkill(2);
+    if (key === 'o') useSkill(3);
+    if (key === 'p') useSkill(4);
+}
+
+function handleKeyUp(event) {
+    // Could add logic for stopping movement if needed
+}
+
+function movePlayer(key) {
+    const speed = playerSpeed;
+    switch (key) {
+        case 'w':
+            playerY -= speed;
+            break;
+        case 's':
+            playerY += speed;
+            break;
+        case 'a':
+            playerX -= speed;
+            break;
+        case 'd':
+            playerX += speed;
+            break;
+    }
+    // Constrain player within screen boundaries
+    playerX = Math.max(playerSize / 2, Math.min(window.innerWidth - playerSize / 2, playerX));
+    playerY = Math.max(playerSize / 2, Math.min(window.innerHeight - playerSize / 2, playerY));
+    playerElement.style.left = `${playerX - playerSize / 2}px`;
+    playerElement.style.top = `${playerY - playerSize / 2}px`;
 }
 
 function updateHealthBar() {
@@ -482,7 +541,6 @@ function updateEffectsAndCooldowns() {
 function pauseGame() {
     isPaused = true;
     domCache.pauseModal.style.display = 'block';
-    if (p5Instance) p5Instance.noLoop();
     activeEffects.forEach(effect => {
         effect.paused = true;
         effect.remainingTime = effect.duration - (Date.now() - effect.startTime);
@@ -498,7 +556,6 @@ function pauseGame() {
 function resumeGame() {
     isPaused = false;
     domCache.pauseModal.style.display = 'none';
-    if (p5Instance) p5Instance.loop();
     activeEffects.forEach(effect => {
         effect.paused = false;
         effect.startTime = Date.now();
@@ -565,7 +622,6 @@ function returnToMainMenu() {
     currentHealth = maxHealth;
     playerX = null;
     playerY = null;
-    playerImage = null;
     cultivatorForm = 'melee';
     cultivatorSkills = [];
     skillCooldowns = [0, 0, 0, 0];
@@ -573,7 +629,7 @@ function returnToMainMenu() {
     enemies = [];
     currentTurn = 1;
     damageTexts = [];
-    
+
     domCache.skillButtons.forEach(btn => {
         if (btn) {
             btn.style.backgroundImage = '';
@@ -582,11 +638,6 @@ function returnToMainMenu() {
             btn.classList.remove('glow');
         }
     });
-
-    if (gameCanvas) {
-        gameCanvas.remove();
-        gameCanvas = null;
-    }
 
     domCache.playerEffects.innerHTML = '';
     domCache.bossEffects1.innerHTML = '';
@@ -597,11 +648,18 @@ function returnToMainMenu() {
     domCache.bossName2.textContent = '';
     domCache.bossHealth1.style.width = '0%';
     domCache.bossHealth2.style.width = '0%';
-    if (p5Instance) p5Instance.noLoop();
+    // Remove player element
+    if (playerElement) {
+        playerElement.remove();
+        playerElement = null;
+    }
     // Clear enemy elements
     if (domCache.enemyContainer) {
         domCache.enemyContainer.innerHTML = '';
     }
+    // Remove event listeners
+    document.removeEventListener('keydown', handleKeyDown);
+    document.removeEventListener('keyup', handleKeyUp);
 }
 
 function spawnEnemies() {
@@ -612,9 +670,7 @@ function spawnEnemies() {
         domCache.enemyContainer.innerHTML = ''; // Clear existing enemies
     }
 
-    // Standardize enemy spawning across all turns to mimic the "bright area" behavior
     if (currentTurn === 1) {
-        // Bright area behavior: 3 regular monsters
         for (let i = 0; i < 3; i++) {
             const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
             const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
@@ -632,14 +688,12 @@ function spawnEnemies() {
                 lastAttackTime: 0,
                 element: null
             };
-            // Constrain enemy position within canvas boundaries
             enemy.x = Math.max(enemy.size / 2, Math.min(canvasWidth - enemy.size / 2, enemy.x));
             enemy.y = Math.max(enemy.size / 2, Math.min(canvasHeight - enemy.size / 2, enemy.y));
             createEnemyElement(enemy);
             enemies.push(enemy);
         }
     } else if (currentTurn === 2) {
-        // Reduced to 3 regular monsters to maintain stability, plus 1 boss
         for (let i = 0; i < 3; i++) {
             const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
             const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
@@ -657,7 +711,6 @@ function spawnEnemies() {
                 lastAttackTime: 0,
                 element: null
             };
-            // Constrain enemy position within canvas boundaries
             enemy.x = Math.max(enemy.size / 2, Math.min(canvasWidth - enemy.size / 2, enemy.x));
             enemy.y = Math.max(enemy.size / 2, Math.min(canvasHeight - enemy.size / 2, enemy.y));
             createEnemyElement(enemy);
@@ -680,13 +733,11 @@ function spawnEnemies() {
             nextSkillIndex: 0,
             element: null
         };
-        // Constrain boss position within canvas boundaries
         boss.x = Math.max(boss.size / 2, Math.min(canvasWidth - boss.size / 2, boss.x));
         boss.y = Math.max(boss.size / 2, Math.min(canvasHeight - boss.size / 2, boss.y));
         createEnemyElement(boss);
         enemies.push(boss);
     } else if (currentTurn === 3) {
-        // Reduced to 3 regular monsters to maintain stability, plus 2 bosses
         for (let i = 0; i < 3; i++) {
             const randomHP = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
             const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
@@ -704,7 +755,6 @@ function spawnEnemies() {
                 lastAttackTime: 0,
                 element: null
             };
-            // Constrain enemy position within canvas boundaries
             enemy.x = Math.max(enemy.size / 2, Math.min(canvasWidth - enemy.size / 2, enemy.x));
             enemy.y = Math.max(enemy.size / 2, Math.min(canvasHeight - enemy.size / 2, enemy.y));
             createEnemyElement(enemy);
@@ -749,7 +799,6 @@ function spawnEnemies() {
                 nextSkillIndex: 0,
                 element: null
             };
-            // Constrain boss positions within canvas boundaries
             enemy1.x = Math.max(enemy1.size / 2, Math.min(canvasWidth - enemy1.size / 2, enemy1.x));
             enemy1.y = Math.max(enemy1.size / 2, Math.min(canvasHeight - enemy1.size / 2, enemy1.y));
             enemy2.x = Math.max(enemy2.size / 2, Math.min(canvasWidth - enemy2.size / 2, enemy2.x));
@@ -759,7 +808,6 @@ function spawnEnemies() {
             enemies.push(enemy1, enemy2);
         }
     } else if (currentTurn === 4) {
-        // Final turn: 1 super boss, no regular monsters to maintain stability
         const superBoss = superBossTypes[Math.floor(Math.random() * superBossTypes.length)];
         const boss = {
             x: Math.random() * (canvasWidth - 70),
@@ -777,12 +825,26 @@ function spawnEnemies() {
             nextSkillIndex: 0,
             element: null
         };
-        // Constrain boss position within canvas boundaries
         boss.x = Math.max(boss.size / 2, Math.min(canvasWidth - boss.size / 2, boss.x));
         boss.y = Math.max(boss.size / 2, Math.min(canvasHeight - boss.size / 2, boss.y));
         createEnemyElement(boss);
         enemies.push(boss);
     }
+
+    // Update boss UI
+    enemies.forEach((enemy, index) => {
+        if (enemy.type !== 'regularMonster') {
+            const bossIndex = index % 2;
+            const bossNameElement = bossIndex === 0 ? domCache.bossName1 : domCache.bossName2;
+            const bossHealthElement = bossIndex === 0 ? domCache.bossHealth1 : domCache.bossHealth2;
+            const bossEffectsElement = bossIndex === 0 ? domCache.bossEffects1 : domCache.bossEffects2;
+            bossNameElement.textContent = enemy.name;
+            bossNameElement.style.display = 'block';
+            bossHealthElement.parentElement.style.display = 'block';
+            bossEffectsElement.style.display = 'block';
+            updateBossHealth(bossIndex, enemy.health, enemy.maxHealth);
+        }
+    });
 }
 
 function createEnemyElement(enemy) {
@@ -799,17 +861,16 @@ function createEnemyElement(enemy) {
     healthBar.className = 'health-bar';
     const health = document.createElement('div');
     health.className = 'health';
-    // Adjust health bar size and color for regular monsters
     if (enemy.type === 'regularMonster') {
-        healthBar.style.width = '20px'; // Reduced width from 30px
-        healthBar.style.height = '3px'; // Reduced height from 5px
-        healthBar.style.backgroundColor = 'red'; // Default red background
-        health.style.backgroundColor = 'green'; // Green fill
+        healthBar.style.width = '20px';
+        healthBar.style.height = '3px';
+        healthBar.style.backgroundColor = 'red';
+        health.style.backgroundColor = 'green';
     } else {
         healthBar.style.width = '30px';
         healthBar.style.height = '5px';
-        healthBar.style.backgroundColor = '#555'; // Default gray for bosses
-        health.style.backgroundColor = 'green'; // Green fill
+        healthBar.style.backgroundColor = '#555';
+        health.style.backgroundColor = 'green';
     }
     health.style.width = '100%';
     healthBar.appendChild(health);
@@ -853,7 +914,32 @@ function calculateDamage(attacker, target, isPlayerAttack) {
 }
 
 function showDamageText(x, y, damage) {
-    damageTexts.push({ x, y, damage, opacity: 255, life: 30 });
+    const damageText = document.createElement('div');
+    damageText.className = 'damage-text';
+    damageText.textContent = `-${damage}`;
+    damageText.style.position = 'absolute';
+    damageText.style.left = `${x}px`;
+    damageText.style.top = `${y - 10}px`;
+    damageText.style.color = 'red';
+    damageText.style.fontSize = '16px';
+    damageText.style.zIndex = '20';
+    domCache.gamePlay.appendChild(damageText);
+
+    let opacity = 1;
+    let life = 30;
+    const animateDamage = () => {
+        if (life <= 0) {
+            damageText.remove();
+            return;
+        }
+        y -= 1;
+        opacity -= 1 / 30;
+        damageText.style.top = `${y - 10}px`;
+        damageText.style.opacity = opacity;
+        life--;
+        requestAnimationFrame(animateDamage);
+    };
+    animateDamage();
 }
 
 function startEnemyAttack(enemy) {
@@ -877,159 +963,32 @@ function startBossSkillLoop(enemy, index) {
     });
 }
 
-function sketch(p) {
-    p5Instance = p;
-
-    p.preload = function() {
-        playerImage = p.loadImage(characterData[selectedCharacter].avatar);
-        enemies.forEach(enemy => {
-            enemy.image = characterData[enemy.type].avatar; // Preload image path
-        });
-    };
-
-    p.setup = function() {
-        // Set canvas to full screen
-        gameCanvas = p.createCanvas(window.innerWidth, window.innerHeight).parent('p5-canvas');
-        gameCanvas.style('position', 'absolute');
-        gameCanvas.style('top', '0');
-        gameCanvas.style('left', '0');
-        gameCanvas.style('width', '100vw');
-        gameCanvas.style('height', '100vh');
-        gameCanvas.style('z-index', '5'); // Below enemy container
-        playerX = p.width / 2;
-        playerY = p.height / 2;
-
-        // Keep the bright background color
-        backgroundImage = p.createGraphics(p.width, p.height);
-        backgroundImage.background(48, 43, 99);
-
-        // Reduced particle count
-        const existingParticles = document.querySelectorAll('#enemy-container .map-particle');
-        existingParticles.forEach(particle => particle.remove());
-        for (let i = 0; i < 10; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'map-particle';
-            particle.style.left = Math.random() * 100 + '%';
-            particle.style.top = Math.random() * 100 + '%';
-            particle.style.animationDelay = Math.random() * 6 + 's';
-            if (domCache.enemyContainer) {
-                domCache.enemyContainer.appendChild(particle);
-            }
+function setupGameLoop() {
+    const gameLoop = () => {
+        if (isPaused) {
+            requestAnimationFrame(gameLoop);
+            return;
         }
 
-        enemies.forEach((enemy, index) => {
-            startEnemyAttack(enemy);
-            if (enemy.type !== 'regularMonster') startBossSkillLoop(enemy, index);
-        });
-
-        setInterval(updateEffectsAndCooldowns, 1000);
-        setInterval(updateGameState, 16); // ~60 FPS update
-    };
-
-    p.draw = function() {
-        if (isPaused) return;
         const now = Date.now();
-        if (now - lastUpdateTime < 16) return; // Throttle to ~60 FPS
+        if (now - lastUpdateTime < 16) {
+            requestAnimationFrame(gameLoop);
+            return;
+        }
         lastUpdateTime = now;
 
-        // Ensure background covers the entire canvas
-        p.image(backgroundImage, 0, 0, p.width, p.height);
-        handlePlayerMovement(p);
+        updateGameState();
+        updateEffectsAndCooldowns();
 
-        p.imageMode(p.CENTER);
-        if (playerImage && playerImage.width > 0) {
-            p.tint(255, 255, 255);
-            p.image(playerImage, playerX, playerY, playerSize, playerSize);
-        } else {
-            p.fill(255, 0, 0);
-            p.ellipse(playerX, playerY, playerSize, playerSize);
-        }
-
-        const attackFrameInterval = Math.round(60 / characterData[selectedCharacter].attackSpeed);
-        const isAttacking = p.keyIsDown(74) && p.frameCount % attackFrameInterval === 0;
-
-        if (isAttacking) {
-            enemies.forEach(enemy => {
-                if (!enemy.element || !enemy.element.parentElement) return; // Skip if element doesn't exist
-                const rect = enemy.element.getBoundingClientRect();
-                const enemyX = rect.left + enemy.size / 2;
-                const enemyY = rect.top + enemy.size / 2;
-                const distToPlayer = Math.hypot(playerX - enemyX, playerY - enemyY);
-                let attackRange = (selectedCharacter === 'soldier' || (selectedCharacter === 'cultivator' && cultivatorForm === 'ranged')) ? 100 : 50;
-                if (distToPlayer <= attackRange) {
-                    const damage = calculateDamage(null, enemy, true);
-                    enemy.health = Math.max(0, enemy.health - damage);
-                    showDamageText(enemyX, enemyY - enemy.size / 2 - 10, damage);
-                    updateEnemyHealth(enemy);
-                    if (enemy.health <= 0) {
-                        enemy.element.remove();
-                        enemies = enemies.filter(e => e.health > 0);
-                        if (enemies.length === 0) {
-                            currentTurn++;
-                            if (currentTurn <= 4) {
-                                spawnEnemies();
-                                p.setup();
-                            } else {
-                                alert('Bạn đã hoàn thành game!');
-                                returnToMainMenu();
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        if (p.frameCount % 2 === 0) {
-            for (let i = damageTexts.length - 1; i >= 0; i--) {
-                let text = damageTexts[i];
-                p.fill(255, 0, 0, text.opacity);
-                p.textSize(16);
-                p.text(`-${text.damage}`, text.x, text.y);
-                text.y -= 1;
-                text.opacity -= 255 / text.life;
-                text.life--;
-                if (text.life <= 0) damageTexts.splice(i, 1);
-            }
-        }
-
-        p.fill(255);
-        p.textSize(14);
-        p.text(`FPS: ${Math.round(p.frameRate())}`, 10, 20);
-
-        if (p.keyIsDown(85)) useSkill(1);
-        if (p.keyIsDown(73)) useSkill(2);
-        if (p.keyIsDown(79)) useSkill(3);
-        if (p.keyIsDown(80)) useSkill(4);
+        requestAnimationFrame(gameLoop);
     };
-
-    p.windowResized = function() {
-        // Resize canvas to full screen on window resize
-        p.resizeCanvas(window.innerWidth, window.innerHeight);
-        // Keep the bright background color
-        backgroundImage = p.createGraphics(p.width, p.height);
-        backgroundImage.background(48, 43, 99);
-        // Update player position to center of new canvas
-        playerX = p.width / 2;
-        playerY = p.height / 2;
-        // Update enemy positions to fit new canvas
-        enemies.forEach(enemy => {
-            enemy.x = Math.random() * (p.width - enemy.size);
-            enemy.y = Math.random() * (p.height - enemy.size);
-            // Constrain enemy position within new canvas boundaries
-            enemy.x = Math.max(enemy.size / 2, Math.min(p.width - enemy.size / 2, enemy.x));
-            enemy.y = Math.max(enemy.size / 2, Math.min(p.height - enemy.size / 2, enemy.y));
-            if (enemy.element) {
-                enemy.element.style.left = `${enemy.x - enemy.size / 2}px`;
-                enemy.element.style.top = `${enemy.y - enemy.size / 2}px`;
-            }
-        });
-    };
+    requestAnimationFrame(gameLoop);
 }
 
 function updateEnemyHealth(enemy) {
-    if (!enemy.element) return; // Skip if element doesn't exist
+    if (!enemy.element) return;
     const healthElement = enemy.element.querySelector('.health');
-    if (!healthElement) return; // Skip if health element not found
+    if (!healthElement) return;
     const healthPercent = (enemy.health / enemy.maxHealth) * 100;
     healthElement.style.width = `${healthPercent}%`;
     if (enemy.type !== 'regularMonster') {
@@ -1038,51 +997,74 @@ function updateEnemyHealth(enemy) {
     }
 }
 
+function attackEnemies() {
+    const attackFrameInterval = Math.round(1000 / characterData[selectedCharacter].attackSpeed);
+    const now = Date.now();
+    if (now - (window.lastAttackTime || 0) < attackFrameInterval) return;
+    window.lastAttackTime = now;
+
+    enemies.forEach(enemy => {
+        if (!enemy.element || !enemy.element.parentElement) return;
+        const rect = enemy.element.getBoundingClientRect();
+        const enemyX = rect.left + enemy.size / 2;
+        const enemyY = rect.top + enemy.size / 2;
+        const distToPlayer = Math.hypot(playerX - enemyX, playerY - enemyY);
+        let attackRange = (selectedCharacter === 'soldier' || (selectedCharacter === 'cultivator' && cultivatorForm === 'ranged')) ? 100 : 50;
+        if (distToPlayer <= attackRange) {
+            const damage = calculateDamage(null, enemy, true);
+            enemy.health = Math.max(0, enemy.health - damage);
+            showDamageText(enemyX, enemyY - enemy.size / 2, damage);
+            updateEnemyHealth(enemy);
+            if (enemy.health <= 0) {
+                enemy.element.remove();
+                enemies = enemies.filter(e => e.health > 0);
+                if (enemies.length === 0) {
+                    currentTurn++;
+                    if (currentTurn <= 4) {
+                        spawnEnemies();
+                    } else {
+                        alert('Bạn đã hoàn thành game!');
+                        returnToMainMenu();
+                    }
+                }
+            }
+        }
+    });
+}
+
 function updateGameState() {
     if (isPaused) return;
     const now = Date.now();
 
     enemies.forEach(enemy => {
-        if (!enemy.element || !enemy.element.parentElement) return; // Skip if element doesn't exist
+        if (!enemy.element || !enemy.element.parentElement) return;
         const rect = enemy.element.getBoundingClientRect();
         const enemyX = rect.left + enemy.size / 2;
         const enemyY = rect.top + enemy.size / 2;
         const distToPlayer = Math.hypot(playerX - enemyX, playerY - enemyY);
 
-        // Normalize enemy movement across the entire map
-        if (distToPlayer > 50) {
+        // Move bosses toward the player
+        if (enemy.type !== 'regularMonster' && distToPlayer > 50) {
             const dx = playerX - enemyX;
             const dy = playerY - enemyY;
             const speed = 2;
             enemy.x += (dx / distToPlayer) * speed;
             enemy.y += (dy / distToPlayer) * speed;
-            // Constrain enemy position within canvas boundaries
             enemy.x = Math.max(enemy.size / 2, Math.min(window.innerWidth - enemy.size / 2, enemy.x));
             enemy.y = Math.max(enemy.size / 2, Math.min(window.innerHeight - enemy.size / 2, enemy.y));
             enemy.element.style.left = `${enemy.x - enemy.size / 2}px`;
             enemy.element.style.top = `${enemy.y - enemy.size / 2}px`;
         }
 
-        // Standardize attack behavior
         const attackIntervalMs = (1 / enemy.attackSpeed) * 1000;
         if (now - enemy.lastAttackTime >= attackIntervalMs && distToPlayer < (enemy.type === 'regularMonster' ? 100 : 150)) {
             enemy.lastAttackTime = now;
             const damage = calculateDamage(enemy, null, false);
             currentHealth = Math.max(0, currentHealth - damage);
-            showDamageText(playerX, playerY - playerSize / 2 - 10, damage);
+            showDamageText(playerX, playerY - playerSize / 2, damage);
             updateHealthBar();
         }
     });
-}
-
-function handlePlayerMovement(p) {
-    let playerSpeed = 5;
-    if (p.keyIsDown(87)) playerY -= playerSpeed; // W
-    if (p.keyIsDown(83)) playerY += playerSpeed; // S
-    if (p.keyIsDown(65)) playerX -= playerSpeed; // A
-    if (p.keyIsDown(68)) playerX += playerSpeed; // D
-    playerX = p.constrain(playerX, playerSize / 2, p.width - playerSize / 2);
-    playerY = p.constrain(playerY, playerSize / 2, p.height - playerSize / 2);
 }
 
 function createParticles() {
