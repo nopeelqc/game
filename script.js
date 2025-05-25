@@ -1054,6 +1054,6 @@ document.addEventListener('DOMContentLoaded', () => {
             resumeGame();
         }
     };
-
+    
     setInterval(createParticles, 10000);
 });
