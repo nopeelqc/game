@@ -919,7 +919,7 @@ function sketch(p) {
         p.imageMode(p.CENTER);
         if (playerImage && playerImage.width > 0) {
             p.tint(255, 255, 255);
-            p.ellipse(playerX, playerY, playerSize, playerSize);
+            // Removed p.ellipse to eliminate the white circle
             p.image(playerImage, playerX, playerY, playerSize, playerSize);
         } else {
             p.fill(255, 0, 0);
