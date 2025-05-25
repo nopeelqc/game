@@ -4,10 +4,7 @@ let skillCooldowns = [0, 0, 0, 0];
 let cooldownDurations = [0, 0, 0, 0];
 let cooldownIntervals = [null, null, null, null];
 let playerImage;
-let enemies = [
-    { x: 300, y: 300, health: 4000, size: 70, image: null, type: 'fireBoss', name: 'Boss Lửa' },
-    { x: 400, y: 200, health: 4000, size: 70, image: null, type: 'iceBoss', name: 'Boss Băng' }
-];
+let enemies = [];
 let playerX, playerY;
 let playerSize = 70;
 let gameCanvas;
@@ -15,6 +12,8 @@ let cultivatorForm = 'melee';
 let cultivatorSkills = [];
 let isPaused = false;
 let activeEffects = [];
+let currentTurn = 1;
+let p5Instance; // Store p5 instance
 
 const effectImages = {
     'giảm thương': 'giamthuong.png',
@@ -143,9 +142,20 @@ const characterData = {
         ],
         avatar: "imagebinhchungtachnen.png"
     },
-    fireBoss: { avatar: "bosslua.png" },
-    iceBoss: { avatar: "bossbang.png" }
+    regularMonster: { avatar: "quaithuong.png" },
+    fireBoss: { avatar: "bosslua.png", health: 4000 },
+    iceBoss: { avatar: "bossbang.png", health: 4000 },
+    tienBoss: { avatar: "bosstien.png", health: 4000 },
+    maBoss: { avatar: "bossma.png", health: 4000 },
+    giangHoMangBoss: { avatar: "bossgianghomang.png", health: 4000 },
+    khongLoBoss: { avatar: "bosskhonglo.png", health: 4000 },
+    thienDaoBoss: { avatar: "bossthiendao.png", health: 5000 },
+    coGiBoss: { avatar: "bosscogi.png", health: 5000 },
+    thienThanSaNgaBoss: { avatar: "bossthienthansanga.png", health: 6000 }
 };
+
+const regularBossTypes = ['fireBoss', 'iceBoss', 'tienBoss', 'maBoss', 'giangHoMangBoss', 'khongLoBoss'];
+const superBossTypes = ['thienDaoBoss', 'coGiBoss', 'thienThanSaNgaBoss'];
 
 function showCharacterSelect() {
     document.getElementById('mainMenu').style.display = 'none';
@@ -254,10 +264,13 @@ function startGame() {
     document.getElementById('avatar').src = character.avatar;
     health = 100;
     updateHealthBar();
-    document.getElementById('bossHealth1').style.width = '100%';
-    document.getElementById('bossHealth2').style.width = '100%';
-    document.getElementById('bossName1').textContent = enemies[0].name;
-    document.getElementById('bossName2').textContent = enemies[1].name;
+    // Hide all boss UI elements by default
+    document.getElementById('bossName1').style.display = 'none';
+    document.getElementById('bossName2').style.display = 'none';
+    document.getElementById('bossHealth1').parentElement.style.display = 'none';
+    document.getElementById('bossHealth2').parentElement.style.display = 'none';
+    document.getElementById('bossEffects1').style.display = 'none';
+    document.getElementById('bossEffects2').style.display = 'none';
 
     if (selectedCharacter === 'cultivator') {
         cultivatorForm = 'melee';
@@ -280,6 +293,7 @@ function startGame() {
     skillCooldowns = new Array(cultivatorSkills.length).fill(0);
     cooldownIntervals = new Array(cultivatorSkills.length).fill(null);
 
+    spawnEnemies();
     new p5(sketch);
 }
 
@@ -378,8 +392,8 @@ function updateEffect(effect) {
 function pauseGame() {
     isPaused = true;
     document.getElementById('pauseModal').style.display = 'block';
-    if (typeof noLoop !== 'undefined') {
-        noLoop();
+    if (p5Instance) {
+        p5Instance.noLoop();
     }
 
     cooldownIntervals.forEach(interval => {
@@ -399,8 +413,8 @@ function pauseGame() {
 function resumeGame() {
     isPaused = false;
     document.getElementById('pauseModal').style.display = 'none';
-    if (typeof loop !== 'undefined') {
-        loop();
+    if (p5Instance) {
+        p5Instance.loop();
     }
 
     skillCooldowns.forEach((cooldown, i) => {
@@ -513,10 +527,8 @@ function returnToMainMenu() {
     skillCooldowns = [0, 0, 0, 0];
     cooldownDurations = [0, 0, 0, 0];
     cooldownIntervals = [null, null, null, null];
-    enemies = [
-        { x: 300, y: 300, health: 4000, size: 70, image: null, type: 'fireBoss', name: 'Boss Lửa' },
-        { x: 400, y: 200, health: 4000, size: 70, image: null, type: 'iceBoss', name: 'Boss Băng' }
-    ];
+    enemies = [];
+    currentTurn = 1;
     
     for (let i = 1; i <= 4; i++) {
         const skillBtn = document.getElementById(`skill${i}`);
@@ -543,13 +555,116 @@ function returnToMainMenu() {
     activeEffects = [];
     
     document.getElementById('avatar').src = '';
+    document.getElementById('bossName1').textContent = '';
+    document.getElementById('bossName2').textContent = '';
+    document.getElementById('bossHealth1').style.width = '0%';
+    document.getElementById('bossHealth2').style.width = '0%';
     
-    if (typeof noLoop !== 'undefined') {
-        noLoop();
+    if (p5Instance) {
+        p5Instance.noLoop();
+    }
+}
+
+function spawnEnemies() {
+    enemies = [];
+    const canvasWidth = window.innerWidth;
+    const canvasHeight = window.innerHeight;
+
+    if (currentTurn === 1) {
+        for (let i = 0; i < 20; i++) {
+            enemies.push({
+                x: Math.random() * (canvasWidth - 70),
+                y: Math.random() * (canvasHeight - 70),
+                health: 200,
+                size: 50,
+                image: null,
+                type: 'regularMonster',
+                name: 'Quái Thường'
+            });
+        }
+    } else if (currentTurn === 2) {
+        for (let i = 0; i < 25; i++) {
+            enemies.push({
+                x: Math.random() * (canvasWidth - 70),
+                y: Math.random() * (canvasHeight - 70),
+                health: 200,
+                size: 50,
+                image: null,
+                type: 'regularMonster',
+                name: 'Quái Thường'
+            });
+        }
+        const randomBoss = regularBossTypes[Math.floor(Math.random() * regularBossTypes.length)];
+        if (randomBoss) {
+            enemies.push({
+                x: Math.random() * (canvasWidth - 70),
+                y: Math.random() * (canvasHeight - 70),
+                health: characterData[randomBoss].health,
+                size: 70,
+                image: null,
+                type: randomBoss,
+                name: String(randomBoss).replace('Boss', 'Boss ')
+            });
+            const index = regularBossTypes.indexOf(randomBoss);
+            if (index > -1) regularBossTypes.splice(index, 1);
+        }
+    } else if (currentTurn === 3) {
+        for (let i = 0; i < 25; i++) {
+            enemies.push({
+                x: Math.random() * (canvasWidth - 70),
+                y: Math.random() * (canvasHeight - 70),
+                health: 200,
+                size: 50,
+                image: null,
+                type: 'regularMonster',
+                name: 'Quái Thường'
+            });
+        }
+        const boss1 = regularBossTypes[Math.floor(Math.random() * regularBossTypes.length)];
+        if (boss1) {
+            const index1 = regularBossTypes.indexOf(boss1);
+            if (index1 > -1) regularBossTypes.splice(index1, 1);
+            const boss2 = regularBossTypes[Math.floor(Math.random() * regularBossTypes.length)];
+            if (boss2) {
+                const index2 = regularBossTypes.indexOf(boss2);
+                if (index2 > -1) regularBossTypes.splice(index2, 1);
+                enemies.push({
+                    x: Math.random() * (canvasWidth - 70),
+                    y: Math.random() * (canvasHeight - 70),
+                    health: characterData[boss1].health,
+                    size: 70,
+                    image: null,
+                    type: boss1,
+                    name: String(boss1).replace('Boss', 'Boss ')
+                });
+                enemies.push({
+                    x: Math.random() * (canvasWidth - 70),
+                    y: Math.random() * (canvasHeight - 70),
+                    health: characterData[boss2].health,
+                    size: 70,
+                    image: null,
+                    type: boss2,
+                    name: String(boss2).replace('Boss', 'Boss ')
+                });
+            }
+        }
+    } else if (currentTurn === 4) {
+        const superBoss = superBossTypes[Math.floor(Math.random() * superBossTypes.length)];
+        enemies.push({
+            x: Math.random() * (canvasWidth - 70),
+            y: Math.random() * (canvasHeight - 70),
+            health: characterData[superBoss].health,
+            size: 70,
+            image: null,
+            type: superBoss,
+            name: String(superBoss).replace('Boss', 'Boss ')
+        });
     }
 }
 
 function sketch(p) {
+    p5Instance = p; // Store the p5 instance
+
     p.preload = function() {
         playerImage = p.loadImage(characterData[selectedCharacter].avatar,
             () => console.log('Player image loaded'),
@@ -560,9 +675,11 @@ function sketch(p) {
                 () => console.log(`${enemy.type} image loaded`),
                 () => console.error(`Failed to load ${enemy.type} image`)
             );
-            enemy.skillCooldowns = bossSkills[enemy.type].map(skill => skill.cooldown);
-            enemy.skillIntervals = new Array(bossSkills[enemy.type].length).fill(null);
-            enemy.nextSkillIndex = 0;
+            if (enemy.type !== 'regularMonster') {
+                enemy.skillCooldowns = bossSkills[enemy.type].map(skill => skill.cooldown);
+                enemy.skillIntervals = new Array(bossSkills[enemy.type].length).fill(null);
+                enemy.nextSkillIndex = 0;
+            }
         });
     };
 
@@ -584,7 +701,9 @@ function sketch(p) {
         }
 
         enemies.forEach((enemy, index) => {
-            startBossSkillLoop(enemy, index);
+            if (enemy.type !== 'regularMonster') {
+                startBossSkillLoop(enemy, index);
+            }
         });
     };
 
@@ -603,7 +722,7 @@ function sketch(p) {
         handlePlayerMovement(p);
 
         p.imageMode(p.CENTER);
-        if (playerImage) {
+        if (playerImage && playerImage.width > 0) { // Added check for valid image
             p.tint(255, 255, 255);
             p.image(playerImage, playerX, playerY, playerSize, playerSize);
         } else {
@@ -613,13 +732,16 @@ function sketch(p) {
 
         enemies.forEach((enemy, index) => {
             if (enemy.health > 0) {
-                if (enemy.image) {
-                    p.tint(255, 0, 0, 150);
-                    p.image(enemy.image, enemy.x, enemy.y, enemy.size, playerSize);
+                if (enemy.image && enemy.image.width > 0) { // Added check for valid image
+                    p.tint(255, 0, 0, enemy.type === 'regularMonster' ? 0 : 150);
+                    p.image(enemy.image, enemy.x, enemy.y, enemy.size, enemy.size);
                 } else {
-                    p.fill(0, 255, 0);
+                    p.fill(enemy.type === 'regularMonster' ? [0, 255, 0] : [255, 0, 0]); // Corrected fill syntax
                     p.ellipse(enemy.x, enemy.y, enemy.size, enemy.size);
                 }
+
+                // Ensure playerX and playerY are defined
+                if (!playerX || !playerY) return;
 
                 let dx = playerX - enemy.x;
                 let dy = playerY - enemy.y;
@@ -630,19 +752,40 @@ function sketch(p) {
                 }
 
                 enemy.x = p.constrain(enemy.x, enemy.size / 2, p.width - enemy.size / 2);
-                enemy.y = p.constrain(enemy.y, enemy.size / 2, p.height - playerSize / 2);
+                enemy.y = p.constrain(enemy.y, enemy.size / 2, p.height - enemy.size / 2);
 
                 if (p.keyIsDown(74) && p.frameCount % 10 === 0) {
                     let distToEnemy = p.dist(playerX, playerY, enemy.x, enemy.y);
                     let attackRange = (selectedCharacter === 'soldier' || (selectedCharacter === 'cultivator' && cultivatorForm === 'ranged')) ? 100 : 50;
                     if (distToEnemy < attackRange) {
                         enemy.health -= 10;
-                        updateBossHealth(index, (enemy.health / 4000) * 100);
+                        if (enemy.type !== 'regularMonster') {
+                            updateBossHealth(index % 2, (enemy.health / characterData[enemy.type].health) * 100);
+                        }
                         if (enemy.health <= 0) {
                             enemy.health = 0;
                             console.log(`${enemy.name} đã bị hạ gục!`);
+                            if (enemies.every(e => e.health <= 0)) {
+                                currentTurn++;
+                                if (currentTurn <= 4) {
+                                    spawnEnemies();
+                                    p.setup();
+                                } else {
+                                    alert('Bạn đã hoàn thành game!');
+                                    returnToMainMenu();
+                                }
+                            }
                         }
                     }
+                }
+
+                // Show UI only when a boss is present
+                if (enemy.type !== 'regularMonster') {
+                    const bossIndex = index % 2;
+                    document.getElementById(`bossName${bossIndex + 1}`).textContent = enemy.name;
+                    document.getElementById(`bossName${bossIndex + 1}`).style.display = 'block';
+                    document.getElementById(`bossHealth${bossIndex + 1}`).parentElement.style.display = 'block';
+                    document.getElementById(`bossEffects${bossIndex + 1}`).style.display = 'block';
                 }
             }
         });
@@ -703,33 +846,35 @@ function startBossSkillLoop(enemy, index) {
             if (debuffEffects.includes(skillData.effect)) {
                 addEffect('playerEffects', skillData.effect);
             } else {
-                addEffect(`bossEffects${index + 1}`, skillData.effect);
+                addEffect(`bossEffects${index % 2 + 1}`, skillData.effect);
             }
             enemy.nextSkillIndex = (i + 1) % bossSkills[enemy.type].length;
         }, skill.cooldown * 1000);
     });
 }
 
-document.querySelectorAll('.character-card').forEach(card => {
-    card.addEventListener('click', function(event) {
-        if (!event.target.classList.contains('char-btn')) {
-            selectCharacter(this.dataset.character);
-        }
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.character-card').forEach(card => {
+        card.addEventListener('click', function(event) {
+            if (!event.target.classList.contains('char-btn')) {
+                selectCharacter(this.dataset.character);
+            }
+        });
     });
+
+    window.onclick = function(event) {
+        const skillModal = document.getElementById('skillModal');
+        const guideModal = document.getElementById('guideModal');
+        const pauseModal = document.getElementById('pauseModal');
+
+        if (event.target === skillModal) {
+            closeModal();
+        } else if (event.target === guideModal) {
+            closeGuide();
+        } else if (event.target === pauseModal) {
+            resumeGame();
+        }
+    };
+
+    setInterval(createParticles, 10000);
 });
-
-window.onclick = function(event) {
-    const skillModal = document.getElementById('skillModal');
-    const guideModal = document.getElementById('guideModal');
-    const pauseModal = document.getElementById('pauseModal');
-
-    if (event.target === skillModal) {
-        closeModal();
-    } else if (event.target === guideModal) {
-        closeGuide();
-    } else if (event.target === pauseModal) {
-        resumeGame();
-    }
-};
-
-setInterval(createParticles, 10000);
