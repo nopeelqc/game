@@ -100,7 +100,7 @@ const bossSkills = {
         { name: 'Huyết Tế', effect: 'huyết tế', duration: 2, cooldown: 12 }
     ],
     'giangHoMangBoss': [
-        { name: 'Gọi Anh Em', effect: 'gọi anh em', duration: 0.1, cooldown: 10 },
+        { name: 'Gọi Anhem', effect: 'gọi anh em', duration: 0.1, cooldown: 10 },
         { name: 'Phím Thủ', effect: 'phím thủ', duration: 8, cooldown: 8 }
     ],
     'khongLoBoss': [
@@ -193,7 +193,7 @@ const characterData = {
     khongLoBoss: { avatar: "bosskhonglo.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8, name: "Bự Ngu" },
     thienDaoBoss: { avatar: "thiendao.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2, name: "Thiên Đạo" },
     coGiBoss: { avatar: "sieucogioi.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2, name: "Siêu Cơ Giới Nhân" },
-    thienThanSaNgaBoss: { avatar: "thienthansanga.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2, name: "Thiên Thần Sa Ngã" }
+    thienThanSaNgaBoss: { avatar: "thienthansanga.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2, name: "Hắc Ám Thiên Thần" }
 };
 
 const regularBossTypes = ['fireBoss', 'iceBoss', 'tienBoss', 'maBoss', 'giangHoMangBoss', 'khongLoBoss'];
@@ -1229,4 +1229,20 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     setInterval(createParticles, 15000);
+
+    const bgMusic = document.getElementById('bgMusic');
+    if (bgMusic) {
+        bgMusic.volume = 0.9;
+    }
+
+    const playAudio = () => {
+        if (bgMusic) {
+            bgMusic.play().catch(() => {});
+        }
+        window.removeEventListener('click', playAudio);
+        window.removeEventListener('keydown', playAudio);
+    };
+
+    window.addEventListener('click', playAudio);
+    window.addEventListener('keydown', playAudio);
 });
