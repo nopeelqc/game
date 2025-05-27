@@ -10,13 +10,30 @@
 <body>
     <div class="container">
         <div class="main-menu" id="mainMenu">
+            <div class="login-register">
+                <button class="auth-btn" onclick="showLogin()">Đăng Nhập</button>
+                <button class="auth-btn" onclick="showRegister()">Đăng Ký</button>
+            </div>
             <h1 class="game-title">🏰 Fantasy Adventure</h1>
             <div class="menu-buttons">
-                <button class="menu-btn" onclick="showCharacterSelect()">🎮 Chơi</button>
-                <button class="menu-btn" onclick="showDonate()">💎 Donate</button>
+                <button class="menu-btn" onclick="showCharacterSelect()">🎮 Chơi Game</button>
                 <button class="menu-btn" onclick="showGuide()">📖 Hướng Dẫn</button>
-                <button class="menu-btn" onclick="showContribute()">🤝 Đóng góp</button>
-                <button class="menu-btn" onclick="exitGame()">🚪 Thoát</button>
+                <button class="menu-btn" onclick="showDonate()">💎 Nạp Tiền</button>
+                <button class="menu-btn" onclick="showSettings()">⚙️ Tùy Chỉnh</button>
+                <button class="menu-btn" onclick="showFeedback()">📢 Phản Hồi</button>
+            </div>
+        </div>
+
+        <div class="modal" id="settingsModal">
+            <div class="modal-content">
+                <span class="close" onclick="closeSettings()">×</span>
+                <div id="settingsContent">
+                    <h2>⚙️ Tùy Chỉnh</h2>
+                    <div class="settings-item">
+                        <label for="musicVolume">Nhạc Game:</label>
+                        <input type="range" id="musicVolume" min="0" max="1" step="0.1" value="0.9" onchange="adjustMusicVolume(this.value)">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -60,8 +77,11 @@
         <div class="modal" id="pauseModal">
             <div class="modal-content">
                 <h2>⏸ Tạm dừng</h2>
-                <button class="menu-btn" onclick="resumeGame()">Chơi tiếp</button>
-                <button class="menu-btn" onclick="returnToMainMenu()">Menu</button>
+                <div class="pause-menu-buttons">
+                    <button class="menu-btn" onclick="resumeGame()">Chơi tiếp</button>
+                    <button class="menu-btn" onclick="showSettings()">Tùy Chỉnh</button>
+                    <button class="menu-btn" onclick="returnToMainMenu()">Menu</button>
+                </div>
             </div>
         </div>
 

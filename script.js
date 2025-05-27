@@ -40,6 +40,7 @@ const domCache = {
     pauseModal: null,
     skillModal: null,
     guideModal: null,
+    settingsModal: null,
     enemyContainer: null,
     bossAvatar1: null,
     bossAvatar2: null
@@ -50,80 +51,56 @@ const effectImages = {
     'tăng thương': 'tangthuong.png',
     'tăng tốc đánh': 'tangtocdanh.png',
     'hồi máu': 'hoimau.png',
-    'tăng tốc chạy': 'tocchay.png',
-    'làm chậm': 'lamcham.png',
     'khóa kỹ năng': 'khoakinang.png',
     'choáng': 'choang.png',
     'thiêu đốt': 'thieudot.png',
-    'bùng cháy': 'bungchay.png',
     'đóng băng': 'dongbang.png',
-    'mưa băng': 'muabang.png',
-    'cuồng phong': 'cuongphong.png',
-    'vụt lốc': 'vutloc.png',
-    'huyết hải': 'huyethai.png',
-    'huyết tế': 'huyette.png',
-    'gọi anh em': 'goianhem.png',
-    'phím thủ': 'phimthu.png',
-    'đập đất': 'dapdat.png',
-    'khiên đất': 'khiendat.png',
-    'lôi kiếp': 'loikiep.png',
-    'uy áp': 'uyap.png',
-    'trói buộc': 'troibuoc.png',
-    'nhất khí hóa tam thanh': 'nhatkhihoatamthanh.png',
-    'đạn lửa': 'danlua.png',
-    'khiên plasma': 'khienplasma.png',
-    'bão từ': 'baotu.png',
-    'drone hỗ trợ': 'dronehotro.png',
-    'gươm thiên địa': 'guomthiendia.png',
-    'quang cầu': 'quangcau.png',
-    'cánh sa ngã': 'canhsanga.png',
-    'thiên giới trói buộc': 'thiengioitroibuoc.png'
 };
 
-const debuffEffects = ['giảm thương', 'làm chậm', 'khóa kỹ năng', 'choáng', 'thiêu đốt', 'đóng băng', 'cuồng phong', 'huyết tế', 'phím thủ', 'trói buộc', 'bão từ', 'cánh sa ngã', 'thiên giới trói buộc'];
+const debuffEffects = ['giảm thương', 'khóa kỹ năng', 'choáng', 'thiêu đốt', 'đóng băng'];
 
 const bossSkills = {
     'fireBoss': [
-        { name: 'Thiêu Đốt', effect: 'thiêu đốt', duration: 5, cooldown: 10 },
-        { name: 'Bùng Cháy', effect: 'bùng cháy', duration: 0.1, cooldown: 12 }
+        { name: 'Thiêu Đốt', effect: 'thiêu đốt', duration: 5, cooldown: 17, damage: 50 },
+        { name: 'Bùng Cháy', effect: 'bùng cháy', duration: 0.1, cooldown: 20, damage: 150 }
     ],
     'iceBoss': [
-        { name: 'Đóng Băng', effect: 'đóng băng', duration: 8, cooldown: 8 },
-        { name: 'Mưa Băng', effect: 'mưa băng', duration: 0.1, cooldown: 10 }
+        { name: 'Đóng Băng', effect: 'đóng băng', duration: 2, cooldown: 12 },
+        { name: 'Mưa Băng', effect: 'mưa băng', duration: 0.1, cooldown: 20, damage: 150 }
     ],
     'tienBoss': [
-        { name: 'Cuồng Phong', effect: 'cuồng phong', duration: 0.1, cooldown: 9 },
-        { name: 'Vụt Lốc', effect: 'vụt lốc', duration: 0.1, cooldown: 12 }
+        { name: 'Tiên Lực', effect: 'tiên lực', duration: 0.1, cooldown: 20, damage: 150 },
+        { name: 'Thần Lực', effect: 'thần lực', duration: 2, cooldown: 12 }
     ],
     'maBoss': [
-        { name: 'Huyết Hải', effect: 'huyết hải', duration: 0.1, cooldown: 9 },
-        { name: 'Huyết Tế', effect: 'huyết tế', duration: 2, cooldown: 12 }
+        { name: 'Huyết Hải', effect: 'huyết hải', duration: 0.1, cooldown: 20, damage: 150 },
+        { name: 'Huyết Nhận', effect: 'huyết nhận', duration: 4, cooldown: 15, heal: 50 }
     ],
     'giangHoMangBoss': [
-        { name: 'Gọi Anhem', effect: 'gọi anh em', duration: 0.1, cooldown: 10 },
-        { name: 'Phím Thủ', effect: 'phím thủ', duration: 8, cooldown: 8 }
+        { name: 'Gọi Đàn Em', effect: 'gọi đàn em', duration: 0.1, cooldown: 25, clones: 3 },
+        { name: 'Phím Thủ', effect: 'phím thủ', duration: 4, cooldown: 15, attackSpeedIncrease: 0.5, rangeIncrease: 30 }
     ],
     'khongLoBoss': [
-        { name: 'Đập Đất', effect: 'đập đất', duration: 0.1, cooldown: 10 },
-        { name: 'Khiên Đất', effect: 'khiên đất', duration: 5, cooldown: 12 }
+        { name: 'Đập Đất', effect: 'đập đất', duration: 0.1, cooldown: 20, damage: 150 },
+        { name: 'Khiên Đất', effect: 'khiên đất', duration: 0.1, cooldown: 19, heal: 500 }
     ],
     'thienDaoBoss': [
-        { name: 'Lôi Kiếp', effect: 'lôi kiếp', duration: 0.1, cooldown: 10 },
-        { name: 'Uy Áp', effect: 'uy áp', duration: 2, cooldown: 12 },
-        { name: 'Trói Buộc', effect: 'trói buộc', duration: 10, cooldown: 10 },
-        { name: 'Nhất Khí Hóa Tam Thanh', effect: 'nhất khí hóa tam thanh', duration: 0.1, cooldown: 15 }
+        { name: 'Lôi Kiếp', effect: 'lôi kiếp', duration: 0.1, cooldown: 20, damage: 200 },
+        { name: 'Uy Áp', effect: 'uy áp', duration: 3, cooldown: 20, attackSpeedReduction: 0.8 },
+        { name: 'Trói Buộc', effect: 'trói buộc', duration: 4, cooldown: 19 },
+        { name: 'Nhất Khí Hóa Tam Thanh', effect: 'nhất khí hóa tam thanh', duration: 0.1, cooldown: 25, clones: 3 }
     ],
     'coGiBoss': [
-        { name: 'Đạn Lửa', effect: 'đạn lửa', duration: 5, cooldown: 8 },
-        { name: 'Khiên Plasma', effect: 'khiên plasma', duration: 12, cooldown: 12 },
-        { name: 'Bão Từ', effect: 'bão từ', duration: 4.5, cooldown: 10 },
-        { name: 'Drone Hỗ Trợ', effect: 'drone hỗ trợ', duration: 15, cooldown: 15 }
+        { name: 'Đạn Lửa', effect: 'đạn lửa', duration: 3, cooldown: 17, damage: 75 },
+        { name: 'Khiên Plasma', effect: 'khiên plasma', duration: 3, cooldown: 12, damageReduction: 0.5 },
+        { name: 'Bão Từ', effect: 'bão từ', duration: 4, cooldown: 15 },
+        { name: 'Drone Hỗ Trợ', effect: 'drone hỗ trợ', duration: 0.1, cooldown: 8, clones: 1 }
     ],
     'thienThanSaNgaBoss': [
-        { name: 'Gươm Thiên Địa', effect: 'gươm thiên địa', duration: 0.1, cooldown: 10 },
-        { name: 'Quang Cầu', effect: 'quang cầu', duration: 5, cooldown: 12 },
-        { name: 'Cánh Sa Ngã', effect: 'cánh sa ngã', duration: 10, cooldown: 10 },
-        { name: 'Thiên Giới Trói Buộc', effect: 'thiên giới trói buộc', duration: 3, cooldown: 15 }
+        { name: 'Gươm Thiên Địa', effect: 'gươm thiên địa', duration: 0.1, cooldown: 23, damage: 250 },
+        { name: 'Quang Cầu', effect: 'quang cầu', duration: 4, cooldown: 15 },
+        { name: 'Cánh Sa Ngã', effect: 'cánh sa ngã', duration: 3, cooldown: 18, attackSpeedReduction: 0.5, rangeReduction: 20 },
+        { name: 'Thiên Giới Trói Buộc', effect: 'thiên giới trói buộc', duration: 5, cooldown: 25, lockSkills: true }
     ]
 };
 
@@ -131,69 +108,78 @@ const characterData = {
     knight: {
         name: "Kỵ Sĩ",
         type: "Phong cách Châu Âu",
-        stats: { "Máu:": "1200 HP", "Sát thương:": "95", "Tốc đánh:": "1.2 đòn/s", "DPS:": "96", "Loại:": "Tanker, Cận chiến" },
+        stats: { "Máu:": "1300 HP", "Sát thương:": "95", "Tốc đánh:": "1.4 đòn/s", "DPS:": "133", "Loại:": "Tanker, Cận chiến" },
         story: "Công chúa bị quỷ bắt, vương quốc giao nhiệm vụ",
         ending: "Cầu hôn tại lễ hội ánh sáng",
-        maxHealth: 1200,
+        maxHealth: 1300,
         attack: 95,
-        attackSpeed: 1.2,
+        attackSpeed: 1.4,
         skills: [
             { name: "Thánh Khiên", desc: "Giảm 50% sát thương nhận vào trong 3 giây", cooldown: 10, effect: 'giảm thương', image: "skill1.png", duration: 3 },
             { name: "Hào Quang Chiến Binh", desc: "Hồi 150 HP tức thì", cooldown: 12, effect: 'hồi máu', image: "skill2.png", duration: 0.1 },
             { name: "Chém Nghiền Nát", desc: "Tăng 30% sát thương trong 5 giây", cooldown: 10, effect: 'tăng thương', image: "skill3.png", duration: 5 },
-            { name: "Cuồng Kích", desc: "Tăng tốc đánh 40% trong 4 giây", cooldown: 12, effect: 'tăng tốc đánh', image: "skill4.png", duration: 4 }
+            { name: "Cuồng Kích", desc: "Tăng tốc đánh 50% trong 4 giây", cooldown: 12, effect: 'tăng tốc đánh', image: "skill4.png", duration: 4 }
         ],
         avatar: "imageknighttachnen.png"
     },
     cultivator: {
         name: "Thánh Tử",
         type: "Phong cách Tu Tiên",
-        stats: { "Máu (Cận):": "650 HP", "Máu (Xa):": "750 HP", "ST (Cận):": "100", "ST (Xa):": "75 AOE", "Loại:": "Linh hoạt, Đa năng" },
+        stats: { 
+            "Máu (Cận):": "950 HP", 
+            "Máu (Xa):": "800 HP", 
+            "ST (Cận):": "80", 
+            "ST (Xa):": "100", 
+            "Tốc đánh (Cận):": "1.4 đòn/s", 
+            "Tốc đánh (Xa):": "1.7 đòn/s", 
+            "Loại:": "Linh hoạt, Đa năng" 
+        },
         story: "Thánh nữ sở hữu thiên phú cao, lúc độ kiếp với thiên đạo bị tiên ma tính kế",
         ending: "Cùng tu tiên quy ẩn nơi tiên cảnh",
-        maxHealthMelee: 650,
-        maxHealthRanged: 750,
-        attackMelee: 100,
-        attackRanged: 75,
-        attackSpeed: 1.5,
+        maxHealthMelee: 950,
+        maxHealthRanged: 800,
+        attackMelee: 80,
+        attackRanged: 100,
+        attackSpeedMelee: 1.4,
+        attackSpeedRanged: 1.7,
         skills: [
-            { name: "Thức Tỉnh Linh Thể", desc: "Chuyển đổi giữa cận ↔ xa (0.5s delay)", cooldown: 20, effect: '', image: "skill5.png", duration: 0 },
-            { name: "Kiếm Vũ Linh Hồn", desc: "Tăng 30% sát thương cận trong 5s", cooldown: 10, effect: 'tăng thương', image: "skill6.png", duration: 5 },
-            { name: "Lôi Kiếm Trận", desc: "Triệu hồi kiếm trận gây 50 sát thương/s trong 4s", cooldown: 14, effect: '', image: "skill10.png", duration: 0 },
-            { name: "Kiếm Hút Hồn", desc: "Hồi 10% máu theo damage gây ra (5s hiệu lực)", cooldown: 12, effect: 'hồi máu', image: "skill7.png", duration: 5 },
-            { name: "Hư Không Tốc Bộ", desc: "Tăng tốc chạy 50% trong 3s", cooldown: 10, effect: 'tăng tốc chạy', image: "skill9.png", duration: 3 },
-            { name: "Linh Kiếm Trảm", desc: "Gây 150 sát thương cận, làm choáng 1s", cooldown: 15, effect: 'choáng', image: "skill8.png", duration: 1 },
-            { name: "Tốc Kiếm Pháp", desc: "Tăng tốc đánh 40% trong 5s", cooldown: 10, effect: 'tăng tốc đánh', image: "skill11.png", duration: 5 }
+            { name: "Thức Tỉnh Linh Thể", desc: "Chuyển đổi giữa cận ↔ xa (0.5s delay)", cooldown: 20, effect: '', image: "skill5.png", duration: 0.5 },
+            { name: "Kiếm Vũ Linh Hồn", desc: "Tăng 30% sát thương trong 5 giây", cooldown: 10, effect: 'tăng thương', image: "skill6.png", duration: 5 },
+            { name: "Kiếm Hút Hồn", desc: "Hồi 20% máu theo sát thương gây ra trong 5 giây", cooldown: 12, effect: 'hồi máu', image: "skill7.png", duration: 5 },
+            { name: "Ảo Ảnh", desc: "Vô hiệu hóa sát thương nhận vào trong 2 giây", cooldown: 10, effect: 'giảm thương', image: "skill9.png", duration: 2 },
+            { name: "Linh Kiếm Trảm", desc: "Gây 150 sát thương cận, làm choáng 2 giây", cooldown: 15, effect: 'choáng', image: "skill8.png", duration: 2 },
+            { name: "Lôi Kiếm Trận", desc: "Gây 240 sát thương", cooldown: 14, effect: '', image: "skill10.png", duration: 0.1 },
+            { name: "Tốc Kiếm Pháp", desc: "Tăng tốc đánh 60% trong 5 giây", cooldown: 10, effect: 'tăng tốc đánh', image: "skill11.png", duration: 5 }
         ],
         avatar: "imagethanhtutachnen.png"
     },
     soldier: {
         name: "Đặc Binh",
         type: "Phong cách Hiện Đại",
-        stats: { "Máu:": "800 HP", "Sát thương:": "120", "Tốc đánh:": "2 đòn/s", "DPS:": "240", "Loại:": "Đánh xa, ST cao" },
+        stats: { "Máu:": "800 HP", "Sát thương:": "120", "Tốc đánh:": "1.6 đòn/s", "DPS:": "192", "Loại:": "Đánh xa, ST cao" },
         story: "Đại minh tinh số 1 ngành giải trí bị bắt cóc, được thuê về để giải cứu",
         ending: "Giải cứu, kết hôn và ẩn danh",
         maxHealth: 800,
         attack: 120,
-        attackSpeed: 2,
+        attackSpeed: 1.6,
         skills: [
-            { name: "Nội Tại Tập Kích", desc: "Tăng 50% sát thương trong 4 giây", cooldown: 10, effect: 'tăng thương', image: "skill12.png", duration: 4 },
-            { name: "Bọc Thép Chiến Thuật", desc: "Tăng 200 máu tạm thời trong 5 giây", cooldown: 12, effect: '', image: "skill13.png", duration: 0 },
-            { name: "Đạn Xuyên Phá", desc: "+30% dame + làm chậm địch 3 giây", cooldown: 10, effect: 'làm chậm', image: "skill14.png", duration: 3 },
-            { name: "Tiếp Đạn Nhanh", desc: "Tăng tốc đánh 50% trong 4 giây", cooldown: 10, effect: 'tăng tốc đánh', image: "skill15.png", duration: 4 }
+            { name: "Nội Tại Tập Kích", desc: "Tăng 40% sát thương trong 4 giây", cooldown: 10, effect: 'tăng thương', image: "skill12.png", duration: 4 },
+            { name: "Bọc Thép Chiến Thuật", desc: "Tăng 200 máu tạm thời trong 1 giây, sau đó giảm 40 máu mỗi giây", cooldown: 12, effect: 'hồi máu', image: "skill13.png", duration: 1 },
+            { name: "Đạn Xuyên Phá", desc: "Tăng 60% sát thương, tầm đánh thêm 20", cooldown: 10, effect: 'tăng thương', image: "skill14.png", duration: 4 },
+            { name: "Tiếp Đạn Nhanh", desc: "Tăng tốc đánh 60% trong 4 giây", cooldown: 10, effect: 'tăng tốc đánh', image: "skill15.png", duration: 4 }
         ],
         avatar: "imagebinhchungtachnen.png"
     },
-    regularMonster: { avatar: "quaithuong.png", attack: 45, attackSpeed: 1 },
-    fireBoss: { avatar: "bosslua.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8, name: "Hỏa Ma Vương" },
-    iceBoss: { avatar: "bossbang.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8, name: "Băng Ma Vương" },
-    tienBoss: { avatar: "bosstien.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8, name: "Hắc Tiên" },
-    maBoss: { avatar: "bossma.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8, name: "Ma Thần" },
-    giangHoMangBoss: { avatar: "bossgianghomang.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8, name: "Mafia Internet" },
-    khongLoBoss: { avatar: "bosskhonglo.png", maxHealth: 4000, attack: 120, attackSpeed: 0.8, name: "Bự Ngu" },
-    thienDaoBoss: { avatar: "thiendao.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2, name: "Thiên Đạo" },
-    coGiBoss: { avatar: "sieucogioi.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2, name: "Siêu Cơ Giới Nhân" },
-    thienThanSaNgaBoss: { avatar: "thienthansanga.png", maxHealth: 7000, attack: 180, attackSpeed: 1.2, name: "Hắc Ám Thiên Thần" }
+    regularMonster: { avatar: "quaithuong.png", attack: 25, attackSpeed: 1, maxHealth: 200 },
+    fireBoss: { avatar: "bosslua.png", maxHealth: 4000, attack: 50, attackSpeed: 1, name: "Hỏa Ma Vương" },
+    iceBoss: { avatar: "bossbang.png", maxHealth: 4000, attack: 50, attackSpeed: 1, name: "Băng Ma Vương" },
+    tienBoss: { avatar: "bosstien.png", maxHealth: 4000, attack: 50, attackSpeed: 1, name: "Hắc Tiên" },
+    maBoss: { avatar: "bossma.png", maxHealth: 4000, attack: 50, attackSpeed: 1, name: "Ma Thần" },
+    giangHoMangBoss: { avatar: "bossgianghomang.png", maxHealth: 4000, attack: 50, attackSpeed: 1, name: "Mafia Internet" },
+    khongLoBoss: { avatar: "bosskhonglo.png", maxHealth: 4000, attack: 50, attackSpeed: 1, name: "Bự Ngu" },
+    thienDaoBoss: { avatar: "thiendao.png", maxHealth: 7000, attack: 80, attackSpeed: 1.1, name: "Thiên Đạo" },
+    coGiBoss: { avatar: "sieucogioi.png", maxHealth: 7000, attack: 80, attackSpeed: 1.1, name: "Siêu Cơ Giới Nhân" },
+    thienThanSaNgaBoss: { avatar: "thienthansanga.png", maxHealth: 7000, attack: 80, attackSpeed: 1.1, name: "Hắc Ám Thiên Thần" }
 };
 
 const regularBossTypes = ['fireBoss', 'iceBoss', 'tienBoss', 'maBoss', 'giangHoMangBoss', 'khongLoBoss'];
@@ -221,6 +207,8 @@ function initDomCache() {
     domCache.pauseModal = document.getElementById('pauseModal');
     domCache.skillModal = document.getElementById('skillModal');
     domCache.guideModal = document.getElementById('guideModal');
+    domCache.settingsModal = document.getElementById('settingsModal');
+    
     let enemyContainer = document.getElementById('enemy-container');
     if (!enemyContainer) {
         enemyContainer = document.createElement('div');
@@ -255,41 +243,78 @@ function initDomCache() {
     domCache.bossName2.parentElement.insertBefore(domCache.bossAvatar2, domCache.bossName2);
 }
 
-function showCharacterSelect() {
-    domCache.mainMenu.style.display = 'none';
-    domCache.characterSelect.style.display = 'block';
-    createParticles();
+function showSettings() {
+    if (domCache.settingsModal) {
+        domCache.settingsModal.style.display = 'block';
+    }
 }
 
-function showMainMenu() {
-    domCache.characterSelect.style.display = 'none';
-    domCache.mainMenu.style.display = 'flex';
-    selectedCharacter = null;
-    updateStartButton();
+function closeSettings() {
+    if (domCache.settingsModal) {
+        domCache.settingsModal.style.display = 'none';
+    }
 }
 
-function showDonate() {
-    alert('💎 Cảm ơn bạn đã muốn ủng hộ! Tính năng donate sẽ được cập nhật sớm.');
+function adjustMusicVolume(value) {
+    const bgMusic = document.getElementById('bgMusic');
+    if (bgMusic) {
+        bgMusic.volume = parseFloat(value);
+    }
 }
 
-function showContribute() {
-    alert('🤝 Cảm ơn bạn muốn đóng góp! Hãy liên hệ với chúng tôi qua email: luongquoccuongvtvp@gmail.com');
+function showLogin() {
+    alert('Tính năng Đăng Nhập sẽ được cập nhật sớm.');
+}
+
+function showRegister() {
+    alert('Tính năng Đăng Ký sẽ được cập nhật sớm.');
+}
+
+function showFeedback() {
+    alert('📢 Cảm ơn bạn muốn gửi phản hồi! Hãy liên hệ qua email: luongquoccuongvtvp@gmail.com');
 }
 
 function showGuide() {
-    domCache.guideModal.style.display = 'block';
-    const guideContent = domCache.guideModal.querySelector('#guideContent');
-    guideContent.innerHTML = `
-        <h2>📖 Hướng Dẫn</h2>
-        <p>⚔️ **W, A, S, D**: Di chuyển theo thứ tự trên, trái, xuống, phải (kết hợp để đi chéo)</p>
-        <p>⚔️ **J**: Đánh thường</p>
-        <p>⚔️ **U, I, O, P**: Kỹ năng 1, 2, 3, 4</p>
-        <p>⏸️ **Space**: Tạm dừng/tiếp tục trò chơi</p>
-    `;
+    if (domCache.guideModal) {
+        domCache.guideModal.style.display = 'block';
+        const guideContent = domCache.guideModal.querySelector('#guideContent');
+        if (guideContent) {
+            guideContent.innerHTML = `
+                <h2>📖 Hướng Dẫn</h2>
+                <p>⚔️ <strong>W, A, S, D</strong>: Di chuyển theo thứ tự trên, trái, xuống, phải (kết hợp để đi chéo)</p>
+                <p>⚔️ <strong>J</strong>: Đánh thường</p>
+                <p>⚔️ <strong>U, I, O, P</strong>: Kỹ năng 1, 2, 3, 4</p>
+                <p>⏸️ <strong>Space</strong>: Tạm dừng/tiếp tục trò chơi</p>
+            `;
+        }
+    }
+}
+
+function showDonate() {
+    alert('💎 Tính năng Nạp Tiền sẽ được cập nhật sớm.');
 }
 
 function closeGuide() {
-    domCache.guideModal.style.display = 'none';
+    if (domCache.guideModal) {
+        domCache.guideModal.style.display = 'none';
+    }
+}
+
+function showCharacterSelect() {
+    if (domCache.mainMenu && domCache.characterSelect) {
+        domCache.mainMenu.style.display = 'none';
+        domCache.characterSelect.style.display = 'block';
+        createParticles();
+    }
+}
+
+function showMainMenu() {
+    if (domCache.characterSelect && domCache.mainMenu) {
+        domCache.characterSelect.style.display = 'none';
+        domCache.mainMenu.style.display = 'flex';
+        selectedCharacter = null;
+        updateStartButton();
+    }
 }
 
 function exitGame() {
@@ -300,50 +325,61 @@ function exitGame() {
 
 function selectCharacter(characterType) {
     document.querySelectorAll('.character-card').forEach(card => card.classList.remove('selected'));
-    document.querySelector(`[data-character="${characterType}"]`).classList.add('selected');
-    selectedCharacter = characterType;
-    updateStartButton();
+    const card = document.querySelector(`[data-character="${characterType}"]`);
+    if (card) {
+        card.classList.add('selected');
+        selectedCharacter = characterType;
+        updateStartButton();
+    }
 }
 
 function updateStartButton() {
     const startBtn = document.getElementById('startGameBtn');
-    startBtn.style.display = selectedCharacter ? 'block' : 'none';
+    if (startBtn) {
+        startBtn.style.display = selectedCharacter ? 'block' : 'none';
+    }
 }
 
 function showSkillDetails(characterType) {
     const character = characterData[characterType];
+    if (!character || !domCache.skillModal) return;
+    
     const content = domCache.skillModal.querySelector('#skillContent');
-    let skillsHtml = `
-        <h2>📋 Chi tiết nhân vật: ${character.name}</h2>
-        <p><strong>Phong cách:</strong> ${character.type}</p>
-        <h3>Thông số:</h3>
-    `;
-    for (const stat in character.stats) {
-        skillsHtml += `<p><strong>${stat}</strong> <span>${character.stats[stat]}</span></p>`;
-    }
-    skillsHtml += `
-        <p><strong>Cốt truyện:</strong> ${character.story}</p>
-        <p><strong>Kết thúc:</strong> ${character.ending}</p>
-        <h3>🔮 Kỹ năng:</h3>
-    `;
-    character.skills.forEach(skill => {
-        skillsHtml += `
-            <div class="skill-item">
-                <div class="skill-header">
-                    <img src="${skill.image}" alt="${skill.name}" class="skill-icon">
-                    <div class="skill-name">${skill.name}</div>
-                </div>
-                <div class="skill-desc">${skill.desc}</div>
-                <div class="skill-cooldown">Hồi chiêu: ${skill.cooldown}s</div>
-            </div>
+    if (content) {
+        let skillsHtml = `
+            <h2>📋 Chi tiết nhân vật: ${character.name}</h2>
+            <p><strong>Phong cách:</strong> ${character.type}</p>
+            <h3>Thông số:</h3>
         `;
-    });
-    content.innerHTML = skillsHtml;
-    domCache.skillModal.style.display = 'block';
+        for (const stat in character.stats) {
+            skillsHtml += `<p><strong>${stat}</strong> <span>${character.stats[stat]}</span></p>`;
+        }
+        skillsHtml += `
+            <p><strong>Cốt truyện:</strong> ${character.story}</p>
+            <p><strong>Kết thúc:</strong> ${character.ending}</p>
+            <h3>🔮 Kỹ năng:</h3>
+        `;
+        character.skills.forEach(skill => {
+            skillsHtml += `
+                <div class="skill-item">
+                    <div class="skill-header">
+                        <img src="${skill.image}" alt="${skill.name}" class="skill-icon">
+                        <div class="skill-name">${skill.name}</div>
+                    </div>
+                    <div class="skill-desc">${skill.desc}</div>
+                    <div class="skill-cooldown">Hồi chiêu: ${skill.cooldown}s</div>
+                </div>
+            `;
+        });
+        content.innerHTML = skillsHtml;
+        domCache.skillModal.style.display = 'block';
+    }
 }
 
 function closeModal() {
-    domCache.skillModal.style.display = 'none';
+    if (domCache.skillModal) {
+        domCache.skillModal.style.display = 'none';
+    }
 }
 
 function startGame() {
@@ -353,29 +389,34 @@ function startGame() {
         return;
     }
     const character = characterData[selectedCharacter];
-    domCache.characterSelect.style.display = 'none';
-    domCache.gamePlay.style.display = 'block';
-    domCache.avatar.src = character.avatar;
+    
+    if (domCache.characterSelect && domCache.gamePlay && domCache.avatar) {
+        domCache.characterSelect.style.display = 'none';
+        domCache.gamePlay.style.display = 'block';
+        domCache.avatar.src = character.avatar;
+    }
 
     if (selectedCharacter === 'knight') {
         maxHealth = character.maxHealth || 1000;
     } else if (selectedCharacter === 'soldier') {
         maxHealth = character.maxHealth || 1000;
     } else if (selectedCharacter === 'cultivator') {
-        maxHealth = cultivatorForm === 'melee' ? (character.maxHealthMelee || 650) : (character.maxHealthRanged || 750);
+        maxHealth = cultivatorForm === 'melee' ? (character.maxHealthMelee || 950) : (character.maxHealthRanged || 800);
     }
     currentHealth = maxHealth;
     health = 100;
     updateHealthBar();
 
-    domCache.bossName1.style.display = 'none';
-    domCache.bossName2.style.display = 'none';
-    domCache.bossHealth1.parentElement.style.display = 'none';
-    domCache.bossHealth2.parentElement.style.display = 'none';
-    domCache.bossEffects1.style.display = 'none';
-    domCache.bossEffects2.style.display = 'none';
-    domCache.bossAvatar1.style.display = 'none';
-    domCache.bossAvatar2.style.display = 'none';
+    if (domCache.bossName1 && domCache.bossName2 && domCache.bossHealth1 && domCache.bossHealth2 && domCache.bossEffects1 && domCache.bossEffects2 && domCache.bossAvatar1 && domCache.bossAvatar2) {
+        domCache.bossName1.style.display = 'none';
+        domCache.bossName2.style.display = 'none';
+        domCache.bossHealth1.parentElement.style.display = 'none';
+        domCache.bossHealth2.parentElement.style.display = 'none';
+        domCache.bossEffects1.style.display = 'none';
+        domCache.bossEffects2.style.display = 'none';
+        domCache.bossAvatar1.style.display = 'none';
+        domCache.bossAvatar2.style.display = 'none';
+    }
 
     if (selectedCharacter === 'cultivator') {
         cultivatorForm = 'melee';
@@ -413,7 +454,10 @@ function startGame() {
     playerElement.style.width = `${playerSize}px`;
     playerElement.style.height = `${playerSize}px`;
     playerElement.style.zIndex = '15';
-    domCache.gamePlay.appendChild(playerElement);
+    
+    if (domCache.gamePlay) {
+        domCache.gamePlay.appendChild(playerElement);
+    }
 
     spawnEnemies();
     setupGameLoop();
@@ -476,8 +520,10 @@ function movePlayer() {
         playerY += dy;
         playerX = Math.max(playerSize / 2, Math.min(window.innerWidth - playerSize / 2, playerX));
         playerY = Math.max(playerSize / 2, Math.min(window.innerHeight - playerSize / 2, playerY));
-        playerElement.style.left = `${playerX - playerSize / 2}px`;
-        playerElement.style.top = `${playerY - playerSize / 2}px`;
+        if (playerElement) {
+            playerElement.style.left = `${playerX - playerSize / 2}px`;
+            playerElement.style.top = `${playerY - playerSize / 2}px`;
+        }
     }
 }
 
@@ -486,9 +532,11 @@ function updateHealthBar() {
     const validMaxHealth = isNaN(maxHealth) || maxHealth === undefined || maxHealth === 0 ? 1 : maxHealth;
     
     health = Math.max(0, (validCurrentHealth / validMaxHealth) * 100);
-    domCache.health.style.width = `${health}%`;
-    domCache.health.textContent = `${Math.round(validCurrentHealth)} / ${validMaxHealth}`;
-    domCache.health.setAttribute('title', `${Math.round(validCurrentHealth)} / ${validMaxHealth}`);
+    if (domCache.health) {
+        domCache.health.style.width = `${health}%`;
+        domCache.health.textContent = `${Math.round(validCurrentHealth)} / ${validMaxHealth}`;
+        domCache.health.setAttribute('title', `${Math.round(validCurrentHealth)} / ${validMaxHealth}`);
+    }
     if (validCurrentHealth <= 0) {
         alert('Bạn đã thua! Trò chơi kết thúc.');
         returnToMainMenu();
@@ -498,9 +546,11 @@ function updateHealthBar() {
 function updateBossHealth(index, currentHealth, maxHealth) {
     const healthPercent = (currentHealth / maxHealth) * 100;
     const healthElement = index === 0 ? domCache.bossHealth1 : domCache.bossHealth2;
-    healthElement.style.width = `${healthPercent}%`;
-    healthElement.textContent = `${Math.round(currentHealth)} / ${maxHealth}`;
-    healthElement.setAttribute('title', `${Math.round(currentHealth)} / ${maxHealth}`);
+    if (healthElement) {
+        healthElement.style.width = `${healthPercent}%`;
+        healthElement.textContent = `${Math.round(currentHealth)} / ${maxHealth}`;
+        healthElement.setAttribute('title', `${Math.round(currentHealth)} / ${maxHealth}`);
+    }
 }
 
 function getEffectDuration(effectName) {
@@ -574,13 +624,8 @@ function updateEffectsAndCooldowns() {
         const button = domCache.skillButtons[i];
         if (button) {
             button.setAttribute('data-cooldown', `${Math.ceil(skillCooldowns[i])}s`);
-            if (skillCooldowns[i] <= 0) {
-                button.disabled = false;
-                button.classList.add('glow');
-            } else {
-                button.disabled = true;
-                button.classList.remove('glow');
-            }
+            button.disabled = skillCooldowns[i] > 0;
+            button.classList.toggle('glow', skillCooldowns[i] <= 0);
         }
     });
 
@@ -590,17 +635,96 @@ function updateEffectsAndCooldowns() {
                 if (cooldown > 0) {
                     enemy.skillCooldowns[i] = Math.max(0, cooldown - (1 / 60));
                 }
-                if (enemy.skillCooldowns[i] <= 0) {
+                if (enemy.skillCooldowns[i] <= 0 && enemy.health > 0) {
                     const skillData = bossSkills[enemy.type][i];
-                    if (enemy.health > 0) {
-                        const index = enemies.indexOf(enemy);
-                        if (debuffEffects.includes(skillData.effect)) {
-                            addEffect('playerEffects', skillData.effect);
-                        } else {
-                            addEffect(`bossEffects${index % 2 + 1}`, skillData.effect);
-                        }
+                    const index = enemies.indexOf(enemy);
+                    const rect = enemy.element.getBoundingClientRect();
+                    const enemyX = rect.left + enemy.size / 2;
+                    const enemyY = rect.top + enemy.size / 2;
+                    const distToPlayer = Math.hypot(playerX - enemyX, playerY - enemyY);
+                    let enemyAttackRange = 30;
+                    if (enemy.type !== 'regularMonster' && !superBossTypes.includes(enemy.type)) {
+                        enemyAttackRange = 40;
+                    } else if (superBossTypes.includes(enemy.type)) {
+                        enemyAttackRange = 55;
                     }
-                    enemy.skillCooldowns[i] = skillData.cooldown;
+                    if (distToPlayer <= enemyAttackRange) {
+                        if (skillData.effect === 'thiêu đốt') {
+                            addEffect('playerEffects', skillData.effect);
+                            currentHealth = Math.max(0, currentHealth - skillData.damage);
+                            showDamageText(playerX, playerY - playerSize / 2, skillData.damage);
+                            updateHealthBar();
+                        } else if (['bùng cháy', 'mưa băng', 'tiên lực', 'huyết hải', 'đập đất', 'lôi kiếp', 'gươm thiên địa'].includes(skillData.effect)) {
+                            currentHealth = Math.max(0, currentHealth - skillData.damage);
+                            showDamageText(playerX, playerY - playerSize / 2, skillData.damage);
+                            updateHealthBar();
+                        } else if (skillData.effect === 'huyết nhận') {
+                            addEffect('playerEffects', skillData.effect);
+                            currentHealth = Math.max(0, currentHealth - skillData.heal);
+                            enemy.health = Math.min(enemy.maxHealth, enemy.health + skillData.heal);
+                            updateEnemyHealth(enemy);
+                            updateHealthBar();
+                        } else if (skillData.effect === 'khiên đất') {
+                            enemy.health = Math.min(enemy.maxHealth, enemy.health + skillData.heal);
+                            updateEnemyHealth(enemy);
+                        } else if (['gọi đàn em', 'nhất khí hóa tam thanh', 'drone hỗ trợ'].includes(skillData.effect)) {
+                            for (let i = 0; i < skillData.clones; i++) {
+                                let cloneX, cloneY;
+                                let validPosition = false;
+                                let attempts = 0;
+                                const maxAttempts = 10;
+                                const minDist = enemy.size * 0.1 + enemy.size / 2;
+
+                                while (!validPosition && attempts < maxAttempts) {
+                                    cloneX = enemy.x + Math.random() * 100 - 50;
+                                    cloneY = enemy.y + Math.random() * 100 - 50;
+                                    validPosition = true;
+
+                                    for (const otherEnemy of enemies) {
+                                        if (otherEnemy.element && otherEnemy.element.parentElement) {
+                                            const otherRect = otherEnemy.element.getBoundingClientRect();
+                                            const otherX = otherRect.left + otherEnemy.size / 2;
+                                            const otherY = otherRect.top + otherEnemy.size / 2;
+                                            const dist = Math.hypot(cloneX - otherX, cloneY - otherY);
+                                            if (dist < minDist) {
+                                                validPosition = false;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    attempts++;
+                                }
+
+                                if (!validPosition) {
+                                    cloneX = enemy.x + minDist;
+                                    cloneY = enemy.y + minDist;
+                                }
+
+                                const clone = {
+                                    x: cloneX,
+                                    y: cloneY,
+                                    maxHealth: enemy.maxHealth * 0.1,
+                                    health: enemy.maxHealth * 0.1,
+                                    size: enemy.size * 0.5,
+                                    image: enemy.image,
+                                    type: 'clone',
+                                    name: `${enemy.name} Clone`,
+                                    attack: enemy.attack * 0.1,
+                                    attackSpeed: enemy.attackSpeed,
+                                    attackRange: (superBossTypes.includes(enemy.type) ? 55 : 40) * 0.1,
+                                    lastAttackTime: gameTime,
+                                    element: null
+                                };
+                                clone.x = Math.max(clone.size / 2, Math.min(window.innerWidth - clone.size / 2, clone.x));
+                                clone.y = Math.max(clone.size / 2, Math.min(window.innerHeight - clone.size / 2, clone.y));
+                                createEnemyElement(clone);
+                                enemies.push(clone);
+                            }
+                        } else {
+                            addEffect('playerEffects', skillData.effect);
+                        }
+                        enemy.skillCooldowns[i] = skillData.cooldown;
+                    }
                 }
             });
         }
@@ -608,7 +732,7 @@ function updateEffectsAndCooldowns() {
 }
 
 function pauseGame() {
-    if (isPaused) return;
+    if (isPaused || !domCache.pauseModal) return;
     isPaused = true;
     domCache.pauseModal.style.display = 'block';
     activeEffects.forEach(effect => {
@@ -625,7 +749,7 @@ function pauseGame() {
 }
 
 function resumeGame() {
-    if (!isPaused) return;
+    if (!isPaused || !domCache.pauseModal) return;
     isPaused = false;
     domCache.pauseModal.style.display = 'none';
     activeEffects.forEach(effect => {
@@ -652,12 +776,14 @@ function resumeGame() {
 
 function useSkill(skillIndex) {
     const actualSkillIndex = skillIndex - 1;
-    if (skillCooldowns[actualSkillIndex] > 0) return;
+    if (skillCooldowns[actualSkillIndex] > 0 || !cultivatorSkills[actualSkillIndex]) return;
     const skill = cultivatorSkills[actualSkillIndex];
     skillCooldowns[actualSkillIndex] = skill.cooldown;
     const button = domCache.skillButtons[actualSkillIndex];
-    button.disabled = true;
-    button.classList.remove('glow');
+    if (button) {
+        button.disabled = true;
+        button.classList.remove('glow');
+    }
 
     if (selectedCharacter === 'cultivator' && skillIndex === 1) {
         cultivatorForm = cultivatorForm === 'melee' ? 'ranged' : 'melee';
@@ -688,22 +814,84 @@ function useSkill(skillIndex) {
         }
     }
 
-    if (skill.name === "Hào Quang Chiến Binh" || skill.name === "Kiếm Hút Hồn") {
-        const attackValue = selectedCharacter && characterData[selectedCharacter] && characterData[selectedCharacter].attack ? characterData[selectedCharacter].attack : 0;
-        const healAmount = skill.name === "Hào Quang Chiến Binh" ? 150 : 0.1 * attackValue;
+    if (skill.name === "Hào Quang Chiến Binh") {
+        currentHealth = Math.min(currentHealth + 150, maxHealth);
+        updateHealthBar();
+    } else if (skill.name === "Kiếm Hút Hồn") {
+        const attackValue = cultivatorForm === 'melee' ? characterData.cultivator.attackMelee : characterData.cultivator.attackRanged;
+        const healAmount = 0.2 * attackValue;
         if (isNaN(healAmount) || healAmount < 0) {
             console.error(`Invalid heal amount for skill ${skill.name}: ${healAmount}`);
             return;
         }
         currentHealth = Math.min(currentHealth + healAmount, maxHealth);
         updateHealthBar();
+    } else if (skill.name === "Linh Kiếm Trảm") {
+        enemies.forEach(enemy => {
+            const rect = enemy.element.getBoundingClientRect();
+            const enemyX = rect.left + enemy.size / 2;
+            const enemyY = rect.top + enemy.size / 2;
+            const distToPlayer = Math.hypot(playerX - enemyX, playerY - enemyY);
+            if (distToPlayer <= 50) {
+                enemy.health = Math.max(0, enemy.health - 150);
+                showDamageText(enemyX, enemyY - enemy.size / 2, 150);
+                updateEnemyHealth(enemy);
+                addEffect(`bossEffects${enemies.indexOf(enemy) % 2 + 1}`, 'choáng');
+                if (enemy.health <= 0) {
+                    enemy.element.remove();
+                    enemies = enemies.filter(e => e.health > 0);
+                    checkGameProgress();
+                }
+            }
+        });
+    } else if (skill.name === "Lôi Kiếm Trận") {
+        enemies.forEach(enemy => {
+            const rect = enemy.element.getBoundingClientRect();
+            const enemyX = rect.left + enemy.size / 2;
+            const enemyY = rect.top + enemy.size / 2;
+            const distToPlayer = Math.hypot(playerX - enemyX, playerY - enemyY);
+            if (distToPlayer <= 65) {
+                enemy.health = Math.max(0, enemy.health - 240);
+                showDamageText(enemyX, enemyY - enemy.size / 2, 240);
+                updateEnemyHealth(enemy);
+                if (enemy.health <= 0) {
+                    enemy.element.remove();
+                    enemies = enemies.filter(e => e.health > 0);
+                    checkGameProgress();
+                }
+            }
+        });
+    } else if (skill.name === "Bọc Thép Chiến Thuật") {
+        currentHealth = Math.min(currentHealth + 200, maxHealth + 200);
+        updateHealthBar();
+        setTimeout(() => {
+            const interval = setInterval(() => {
+                currentHealth = Math.max(0, currentHealth - 40);
+                updateHealthBar();
+            }, 1000);
+            setTimeout(() => clearInterval(interval), 5000);
+        }, 1000);
+    }
+}
+
+function checkGameProgress() {
+    if (enemies.length === 0) {
+        currentTurn++;
+        if (currentTurn <= 4) {
+            spawnEnemies();
+        } else {
+            alert('Bạn đã hoàn thành game!');
+            returnToMainMenu();
+        }
     }
 }
 
 function returnToMainMenu() {
-    domCache.gamePlay.style.display = 'none';
-    domCache.pauseModal.style.display = 'none';
-    domCache.mainMenu.style.display = 'flex';
+    if (domCache.gamePlay && domCache.pauseModal && domCache.mainMenu) {
+        domCache.gamePlay.style.display = 'none';
+        domCache.pauseModal.style.display = 'none';
+        domCache.mainMenu.style.display = 'flex';
+    }
     isPaused = false;
     selectedCharacter = null;
     health = 100;
@@ -718,8 +906,8 @@ function returnToMainMenu() {
     enemies = [];
     currentTurn = 1;
     damageTexts = [];
-    gameTime = 0; 
-    window.lastAttackTime = 0; 
+    gameTime = 0;
+    window.lastAttackTime = 0;
 
     domCache.skillButtons.forEach(btn => {
         if (btn) {
@@ -730,17 +918,18 @@ function returnToMainMenu() {
         }
     });
 
-    domCache.playerEffects.innerHTML = '';
-    domCache.bossEffects1.innerHTML = '';
-    domCache.bossEffects2.innerHTML = '';
+    if (domCache.playerEffects) domCache.playerEffects.innerHTML = '';
+    if (domCache.bossEffects1) domCache.bossEffects1.innerHTML = '';
+    if (domCache.bossEffects2) domCache.bossEffects2.innerHTML = '';
     activeEffects = [];
-    domCache.avatar.src = '';
-    domCache.bossName1.textContent = '';
-    domCache.bossName2.textContent = '';
-    domCache.bossHealth1.style.width = '0%';
-    domCache.bossHealth2.style.width = '0%';
-    domCache.bossAvatar1.style.display = 'none';
-    domCache.bossAvatar2.style.display = 'none';
+    if (domCache.avatar) domCache.avatar.src = '';
+    if (domCache.bossName1) domCache.bossName1.textContent = '';
+    if (domCache.bossName2) domCache.bossName2.textContent = '';
+    if (domCache.bossHealth1) domCache.bossHealth1.style.width = '0%';
+    if (domCache.bossHealth2) domCache.bossHealth2.style.width = '0%';
+    if (domCache.bossAvatar1) domCache.bossAvatar1.style.display = 'none';
+    if (domCache.bossAvatar2) domCache.bossAvatar2.style.display = 'none';
+    
     if (playerElement) {
         playerElement.remove();
         playerElement = null;
@@ -748,6 +937,7 @@ function returnToMainMenu() {
     if (domCache.enemyContainer) {
         domCache.enemyContainer.innerHTML = '';
     }
+    
     document.removeEventListener('keydown', handleKeyDown);
     document.removeEventListener('keyup', handleKeyUp);
     Object.keys(keysPressed).forEach(key => keysPressed[key] = false);
@@ -758,97 +948,28 @@ function spawnEnemies() {
     const canvasWidth = window.innerWidth;
     const canvasHeight = window.innerHeight;
     if (domCache.enemyContainer) {
-        domCache.enemyContainer.innerHTML = ''; 
+        domCache.enemyContainer.innerHTML = '';
     }
 
     if (currentTurn === 1) {
         for (let i = 0; i < 3; i++) {
-            const randomHP = Math.floor(Math.random() * (200 - 100 + 1)) + 100;
-            const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
-            const enemy = {
-                x: Math.random() * (canvasWidth - 50),
-                y: Math.random() * (canvasHeight - 50),
-                maxHealth: randomHP,
-                health: randomHP,
-                size: 50,
-                image: characterData.regularMonster.avatar,
-                type: 'regularMonster',
-                name: 'Quái Thường',
-                attack: randomAttack,
-                attackSpeed: 1,
-                lastAttackTime: 0,
-                element: null
-            };
-            enemy.x = Math.max(enemy.size / 2, Math.min(canvasWidth - enemy.size / 2, enemy.x));
-            enemy.y = Math.max(enemy.size / 2, Math.min(canvasHeight - enemy.size / 2, enemy.y));
+            const enemy = createEnemy('regularMonster', canvasWidth, canvasHeight, 50);
             createEnemyElement(enemy);
             enemies.push(enemy);
         }
     } else if (currentTurn === 2) {
         for (let i = 0; i < 5; i++) {
-            const randomHP = Math.floor(Math.random() * (200 - 100 + 1)) + 100;
-            const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
-            const enemy = {
-                x: Math.random() * (canvasWidth - 50),
-                y: Math.random() * (canvasHeight - 50),
-                maxHealth: randomHP,
-                health: randomHP,
-                size: 50,
-                image: characterData.regularMonster.avatar,
-                type: 'regularMonster',
-                name: 'Quái Thường',
-                attack: randomAttack,
-                attackSpeed: 1,
-                lastAttackTime: 0,
-                element: null
-            };
-            enemy.x = Math.max(enemy.size / 2, Math.min(canvasWidth - enemy.size / 2, enemy.x));
-            enemy.y = Math.max(enemy.size / 2, Math.min(canvasHeight - enemy.size / 2, enemy.y));
+            const enemy = createEnemy('regularMonster', canvasWidth, canvasHeight, 50);
             createEnemyElement(enemy);
             enemies.push(enemy);
         }
         const randomBoss = regularBossTypes[Math.floor(Math.random() * regularBossTypes.length)];
-        const boss = {
-            x: Math.random() * (canvasWidth - 70),
-            y: Math.random() * (canvasHeight - 70),
-            maxHealth: characterData[randomBoss].maxHealth,
-            health: characterData[randomBoss].maxHealth,
-            size: 70,
-            image: characterData[randomBoss].avatar,
-            type: randomBoss,
-            name: characterData[randomBoss].name, 
-            attack: characterData[randomBoss].attack,
-            attackSpeed: characterData[randomBoss].attackSpeed,
-            lastAttackTime: 0,
-            skillCooldowns: bossSkills[randomBoss].map(skill => skill.cooldown),
-            nextSkillIndex: 0,
-            element: null,
-            uiIndex: 0 
-        };
-        boss.x = Math.max(boss.size / 2, Math.min(canvasWidth - boss.size / 2, boss.x));
-        boss.y = Math.max(boss.size / 2, Math.min(canvasHeight - boss.size / 2, boss.y));
+        const boss = createEnemy(randomBoss, canvasWidth, canvasHeight, 70, 0);
         createEnemyElement(boss);
         enemies.push(boss);
     } else if (currentTurn === 3) {
         for (let i = 0; i < 5; i++) {
-            const randomHP = Math.floor(Math.random() * (200 - 100 + 1)) + 100;
-            const randomAttack = Math.floor(Math.random() * (60 - 30 + 1)) + 30;
-            const enemy = {
-                x: Math.random() * (canvasWidth - 50),
-                y: Math.random() * (canvasHeight - 50),
-                maxHealth: randomHP,
-                health: randomHP,
-                size: 50,
-                image: characterData.regularMonster.avatar,
-                type: 'regularMonster',
-                name: 'Quái Thường',
-                attack: randomAttack,
-                attackSpeed: 1,
-                lastAttackTime: 0,
-                element: null
-            };
-            enemy.x = Math.max(enemy.size / 2, Math.min(canvasWidth - enemy.size / 2, enemy.x));
-            enemy.y = Math.max(enemy.size / 2, Math.min(canvasHeight - enemy.size / 2, enemy.y));
+            const enemy = createEnemy('regularMonster', canvasWidth, canvasHeight, 50);
             createEnemyElement(enemy);
             enemies.push(enemy);
         }
@@ -859,69 +980,15 @@ function spawnEnemies() {
         availableBosses = availableBosses.filter(b => b !== boss1Type);
         const boss2Type = availableBosses[Math.floor(Math.random() * availableBosses.length)];
         if (boss1Type && boss2Type) {
-            const enemy1 = {
-                x: Math.random() * (canvasWidth - 70),
-                y: Math.random() * (canvasHeight - 70),
-                maxHealth: characterData[boss1Type].maxHealth,
-                health: characterData[boss1Type].maxHealth,
-                size: 70,
-                image: characterData[boss1Type].avatar,
-                type: boss1Type,
-                name: characterData[boss1Type].name, 
-                attack: characterData[boss1Type].attack,
-                attackSpeed: characterData[boss1Type].attackSpeed,
-                lastAttackTime: 0,
-                skillCooldowns: bossSkills[boss1Type].map(skill => skill.cooldown),
-                nextSkillIndex: 0,
-                element: null,
-                uiIndex: 0 
-            };
-            const enemy2 = {
-                x: Math.random() * (canvasWidth - 70),
-                y: Math.random() * (canvasHeight - 70),
-                maxHealth: characterData[boss2Type].maxHealth,
-                health: characterData[boss2Type].maxHealth,
-                size: 70,
-                image: characterData[boss2Type].avatar,
-                type: boss2Type,
-                name: characterData[boss2Type].name,
-                attack: characterData[boss2Type].attack,
-                attackSpeed: characterData[boss2Type].attackSpeed,
-                lastAttackTime: 0,
-                skillCooldowns: bossSkills[boss2Type].map(skill => skill.cooldown),
-                nextSkillIndex: 0,
-                element: null,
-                uiIndex: 1 
-            };
-            enemy1.x = Math.max(enemy1.size / 2, Math.min(canvasWidth - enemy1.size / 2, enemy1.x));
-            enemy1.y = Math.max(enemy1.size / 2, Math.min(canvasHeight - enemy1.size / 2, enemy1.y));
-            enemy2.x = Math.max(enemy2.size / 2, Math.min(canvasWidth - enemy2.size / 2, enemy2.x));
-            enemy2.y = Math.max(enemy2.size / 2, Math.min(canvasHeight - enemy2.size / 2, enemy2.y));
+            const enemy1 = createEnemy(boss1Type, canvasWidth, canvasHeight, 70, 0);
+            const enemy2 = createEnemy(boss2Type, canvasWidth, canvasHeight, 70, 1);
             createEnemyElement(enemy1);
             createEnemyElement(enemy2);
             enemies.push(enemy1, enemy2);
         }
     } else if (currentTurn === 4) {
         const superBoss = superBossTypes[Math.floor(Math.random() * superBossTypes.length)];
-        const boss = {
-            x: Math.random() * (canvasWidth - 70),
-            y: Math.random() * (canvasHeight - 70),
-            maxHealth: characterData[superBoss].maxHealth,
-            health: characterData[superBoss].maxHealth,
-            size: 70,
-            image: characterData[superBoss].avatar,
-            type: superBoss,
-            name: characterData[superBoss].name,
-            attack: characterData[superBoss].attack,
-            attackSpeed: characterData[superBoss].attackSpeed,
-            lastAttackTime: 0,
-            skillCooldowns: bossSkills[superBoss].map(skill => skill.cooldown),
-            nextSkillIndex: 0,
-            element: null,
-            uiIndex: 0
-        };
-        boss.x = Math.max(boss.size / 2, Math.min(canvasWidth - boss.size / 2, boss.x));
-        boss.y = Math.max(boss.size / 2, Math.min(canvasHeight - boss.size / 2, boss.y));
+        const boss = createEnemy(superBoss, canvasWidth, canvasHeight, 70, 0);
         createEnemyElement(boss);
         enemies.push(boss);
     }
@@ -933,12 +1000,14 @@ function spawnEnemies() {
             const bossHealthElement = bossIndex === 0 ? domCache.bossHealth1 : domCache.bossHealth2;
             const bossEffectsElement = bossIndex === 0 ? domCache.bossEffects1 : domCache.bossEffects2;
             const bossAvatarElement = bossIndex === 0 ? domCache.bossAvatar1 : domCache.bossAvatar2;
-            bossNameElement.textContent = enemy.name;
-            bossNameElement.style.display = 'block';
-            bossHealthElement.parentElement.style.display = 'block';
-            bossEffectsElement.style.display = 'block';
-            bossAvatarElement.src = enemy.image;
-            bossAvatarElement.style.display = 'inline-block';
+            if (bossNameElement) bossNameElement.textContent = enemy.name;
+            if (bossNameElement) bossNameElement.style.display = 'block';
+            if (bossHealthElement) bossHealthElement.parentElement.style.display = 'block';
+            if (bossEffectsElement) bossEffectsElement.style.display = 'block';
+            if (bossAvatarElement) {
+                bossAvatarElement.src = enemy.image;
+                bossAvatarElement.style.display = 'inline-block';
+            }
             updateBossHealth(bossIndex, enemy.health, enemy.maxHealth);
         }
     });
@@ -947,6 +1016,32 @@ function spawnEnemies() {
         startEnemyAttack(enemy);
         if (enemy.type !== 'regularMonster') startBossSkillLoop(enemy, index);
     });
+}
+
+function createEnemy(type, canvasWidth, canvasHeight, size, uiIndex = null) {
+    const enemyData = characterData[type];
+    const x = Math.random() * (canvasWidth - size);
+    const y = Math.random() * (canvasHeight - size);
+    const enemy = {
+        x: Math.max(size / 2, Math.min(canvasWidth - size / 2, x)),
+        y: Math.max(size / 2, Math.min(canvasHeight - size / 2, y)),
+        maxHealth: enemyData.maxHealth,
+        health: enemyData.maxHealth,
+        size,
+        image: enemyData.avatar,
+        type,
+        name: enemyData.name || 'Quái Thường',
+        attack: enemyData.attack,
+        attackSpeed: enemyData.attackSpeed,
+        lastAttackTime: 0,
+        element: null
+    };
+    if (type !== 'regularMonster') {
+        enemy.skillCooldowns = bossSkills[type]?.map(skill => skill.cooldown) || [];
+        enemy.nextSkillIndex = 0;
+        enemy.uiIndex = uiIndex;
+    }
+    return enemy;
 }
 
 function createEnemyElement(enemy) {
@@ -979,6 +1074,7 @@ function createEnemyElement(enemy) {
     enemyElement.style.width = `${enemy.size}px`;
     enemyElement.style.height = `${enemy.size}px`;
     enemy.element = enemyElement;
+    
     if (domCache.enemyContainer) {
         domCache.enemyContainer.appendChild(enemyElement);
     } else {
@@ -986,7 +1082,7 @@ function createEnemyElement(enemy) {
     }
 }
 
-function calculateDamage(attacker, target, isPlayerAttack) {
+function calculateDamage(attacker, target, isPlayerAttack, skillIndex = null) {
     let baseDamage;
     if (isPlayerAttack) {
         if (selectedCharacter === 'cultivator') {
@@ -1005,9 +1101,26 @@ function calculateDamage(attacker, target, isPlayerAttack) {
     let damageMultiplier = 1.0;
 
     const effectTargetId = isPlayerAttack ? 'playerEffects' : `bossEffects${enemies.indexOf(attacker) % 2 + 1}`;
+    
     const damageIncrease = activeEffects.some(e => e.effectName === 'tăng thương' && e.img.parentElement.id === effectTargetId && e.remainingTime > 0);
-    if (damageIncrease) {
-        damageMultiplier += (selectedCharacter === 'knight' ? 0.30 : selectedCharacter === 'soldier' ? 0.50 : selectedCharacter === 'cultivator' ? 0.30 : 0);
+    if (damageIncrease && skillIndex !== null) {
+        const skillName = cultivatorSkills[skillIndex]?.name;
+        if (selectedCharacter === 'knight' && skillName === "Chém Nghiền Nát") {
+            damageMultiplier += 0.3;
+        } else if (selectedCharacter === 'cultivator' && skillName === "Kiếm Vũ Linh Hồn") {
+            damageMultiplier += 0.3;
+        } else if (selectedCharacter === 'soldier') {
+            if (skillName === "Nội Tại Tập Kích") {
+                damageMultiplier += 0.4;
+            } else if (skillName === "Đạn Xuyên Phá") {
+                damageMultiplier += 0.6;
+            }
+        }
+    }
+
+    const damageReduction = activeEffects.some(e => e.effectName === 'giảm thương' && e.img.parentElement.id === (isPlayerAttack ? `bossEffects${enemies.indexOf(target) % 2 + 1}` : 'playerEffects') && e.remainingTime > 0);
+    if (damageReduction) {
+        damageMultiplier *= 0.5;
     }
 
     const finalDamage = Math.floor(baseDamage * damageMultiplier);
@@ -1028,7 +1141,10 @@ function showDamageText(x, y, damage) {
     damageText.style.color = 'red';
     damageText.style.fontSize = '16px';
     damageText.style.zIndex = '20';
-    domCache.gamePlay.appendChild(damageText);
+    
+    if (domCache.gamePlay) {
+        domCache.gamePlay.appendChild(damageText);
+    }
 
     let opacity = 1;
     let life = 30;
@@ -1052,10 +1168,14 @@ function startEnemyAttack(enemy) {
 }
 
 function startBossSkillLoop(enemy, index) {
-    enemy.skillCooldowns?.forEach((cooldown, i) => {
-        const skillData = bossSkills[enemy.type][i];
-        enemy.skillCooldowns[i] = skillData.cooldown;
-    });
+    if (enemy.skillCooldowns) {
+        enemy.skillCooldowns.forEach((cooldown, i) => {
+            const skillData = bossSkills[enemy.type][i];
+            if (skillData) {
+                enemy.skillCooldowns[i] = skillData.cooldown;
+            }
+        });
+    }
 }
 
 function setupGameLoop() {
@@ -1111,7 +1231,10 @@ function updateEnemyHealth(enemy) {
 
 function attackEnemies() {
     const character = characterData[selectedCharacter];
-    const attackFrameInterval = character && character.attackSpeed ? (1 / character.attackSpeed) : 1;
+    if (!character) return;
+    
+    const attackSpeed = selectedCharacter === 'cultivator' ? (cultivatorForm === 'melee' ? character.attackSpeedMelee : character.attackSpeedRanged) : character.attackSpeed;
+    const attackFrameInterval = attackSpeed ? (1 / attackSpeed) : 1;
     if (gameTime - (window.lastAttackTime || 0) < attackFrameInterval) return;
     window.lastAttackTime = gameTime;
 
@@ -1124,13 +1247,16 @@ function attackEnemies() {
 
         let attackRange;
         if (selectedCharacter === 'knight') {
-            attackRange = 70;
+            attackRange = 50;
         } else if (selectedCharacter === 'soldier') {
-            attackRange = 100;
+            attackRange = 65;
+            if (activeEffects.some(e => e.effectName === 'tăng thương' && e.img.parentElement.id === 'playerEffects' && cultivatorSkills.some(s => s.name === "Đạn Xuyên Phá"))) {
+                attackRange += 20;
+            }
         } else if (selectedCharacter === 'cultivator') {
-            attackRange = cultivatorForm === 'melee' ? 70 : 100;
+            attackRange = cultivatorForm === 'melee' ? 50 : 65;
         } else {
-            attackRange = 70;
+            attackRange = 50;
         }
 
         if (distToPlayer <= attackRange) {
@@ -1142,15 +1268,7 @@ function attackEnemies() {
                 if (enemy.health <= 0) {
                     enemy.element.remove();
                     enemies = enemies.filter(e => e.health > 0);
-                    if (enemies.length === 0) {
-                        currentTurn++;
-                        if (currentTurn <= 4) {
-                            spawnEnemies();
-                        } else {
-                            alert('Bạn đã hoàn thành game!');
-                            returnToMainMenu();
-                        }
-                    }
+                    checkGameProgress();
                 }
             }
         }
@@ -1167,28 +1285,66 @@ function updateGameState() {
         const enemyY = rect.top + enemy.size / 2;
         const distToPlayer = Math.hypot(playerX - enemyX, playerY - enemyY);
 
-        if (distToPlayer > 50) {
+        let enemyAttackRange;
+        if (enemy.type === 'clone' && enemy.attackRange) {
+            enemyAttackRange = enemy.attackRange;
+        } else if (enemy.type !== 'regularMonster' && !superBossTypes.includes(enemy.type)) {
+            enemyAttackRange = 40;
+        } else if (superBossTypes.includes(enemy.type)) {
+            enemyAttackRange = 55;
+        } else {
+            enemyAttackRange = 30;
+        }
+
+        let dxTotal = 0;
+        let dyTotal = 0;
+        enemies.forEach(otherEnemy => {
+            if (otherEnemy !== enemy && otherEnemy.element && otherEnemy.element.parentElement) {
+                const otherRect = otherEnemy.element.getBoundingClientRect();
+                const otherX = otherRect.left + otherEnemy.size / 2;
+                const otherY = otherRect.top + otherEnemy.size / 2;
+                const dist = Math.hypot(enemyX - otherX, enemyY - otherY);
+                const minDist = (enemy.size + otherEnemy.size) / 2;
+                if (dist < minDist && dist > 0) {
+                    const pushStrength = (minDist - dist) / minDist;
+                    const dx = (enemyX - otherX) / dist * pushStrength * 2;
+                    const dy = (enemyY - otherY) / dist * pushStrength * 2;
+                    dxTotal += dx;
+                    dyTotal += dy;
+                }
+            }
+        });
+
+        if (distToPlayer > enemyAttackRange) {
             const dx = playerX - enemyX;
             const dy = playerY - enemyY;
             const speed = 2;
-            enemy.x += (dx / distToPlayer) * speed;
-            enemy.y += (dy / distToPlayer) * speed;
+            const moveDist = Math.hypot(dx, dy);
+            if (moveDist > 0) {
+                enemy.x += (dx / moveDist) * speed + dxTotal;
+                enemy.y += (dy / moveDist) * speed + dyTotal;
+            }
+            enemy.x = Math.max(enemy.size / 2, Math.min(window.innerWidth - enemy.size / 2, enemy.x));
+            enemy.y = Math.max(enemy.size / 2, Math.min(window.innerHeight - enemy.size / 2, enemy.y));
+            enemy.element.style.left = `${enemy.x - enemy.size / 2}px`;
+            enemy.element.style.top = `${enemy.y - enemy.size / 2}px`;
+        } else {
+            enemy.x += dxTotal;
+            enemy.y += dyTotal;
             enemy.x = Math.max(enemy.size / 2, Math.min(window.innerWidth - enemy.size / 2, enemy.x));
             enemy.y = Math.max(enemy.size / 2, Math.min(window.innerHeight - enemy.size / 2, enemy.y));
             enemy.element.style.left = `${enemy.x - enemy.size / 2}px`;
             enemy.element.style.top = `${enemy.y - enemy.size / 2}px`;
         }
 
-        const attackInterval = 1 / enemy.attackSpeed;
+        let enemyAttackSpeed = enemy.attackSpeed;
+        if (enemy.type === 'giangHoMangBoss' && activeEffects.some(e => e.effectName === 'phím thủ' && e.img.parentElement.id === `bossEffects${enemies.indexOf(enemy) % 2 + 1}`)) {
+            enemyAttackSpeed += 0.5;
+        }
+        const attackInterval = 1 / enemyAttackSpeed;
         if (gameTime - enemy.lastAttackTime >= attackInterval) {
             enemy.lastAttackTime = gameTime;
-            let enemyAttackRange = 30;
-            if (enemy.type !== 'regularMonster' && !superBossTypes.includes(enemy.type)) {
-                enemyAttackRange = 40;
-            } else if (superBossTypes.includes(enemy.type)) {
-                enemyAttackRange = 50;
-            }
-            if (distToPlayer < enemyAttackRange) {
+            if (distToPlayer <= enemyAttackRange) {
                 const damage = calculateDamage(enemy, null, false);
                 currentHealth = Math.max(0, currentHealth - damage);
                 showDamageText(playerX, playerY - playerSize / 2, damage);
@@ -1204,29 +1360,29 @@ function createParticles() {
     for (let i = 0; i < 5; i++) {
         const particle = document.createElement('div');
         particle.className = 'particle';
-        particle.style.left = Math.random() * 100 + 'vw';
-        particle.style.top = Math.random() * 100 + 'vh';
-        particle.style.animationDelay = Math.random() * 6 + 's';
+        particle.style.left = `${Math.random() * 100}vw`;
+        particle.style.top = `${Math.random() * 100}vh`;
+        particle.style.animationDelay = `${Math.random() * 6}s`;
         document.body.appendChild(particle);
     }
 }
 
-initDomCache();
-
 document.addEventListener('DOMContentLoaded', () => {
+    initDomCache();
+
     document.querySelectorAll('.character-card').forEach(card => {
         card.addEventListener('click', function(event) {
             if (!event.target.classList.contains('char-btn')) {
                 selectCharacter(this.dataset.character);
             }
         });
-    });
-
     window.onclick = function(event) {
-        if (event.target === domCache.skillModal) closeModal();
-        else if (event.target === domCache.guideModal) closeGuide();
-        else if (event.target === domCache.pauseModal) resumeGame();
-    };
+            if (event.target === domCache.skillModal) closeModal();
+            if (event.target === domCache.guideModal) closeGuide();
+            if (event.target === domCache.pauseModal) resumeGame();
+            if (event.target === domCache.settingsModal) closeSettings();
+        }
+    });
 
     setInterval(createParticles, 15000);
 
